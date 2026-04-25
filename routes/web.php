@@ -2,9 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Models\Subject;
-use App\Models\Exam;
 
-Route::view('/', 'welcome')->name('home');
+Route::view('/', 'auth.login')->name('home');
 
 // ============================================================
 // REDIRECT after login based on role
@@ -25,11 +24,6 @@ Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->gr
 
     Route::get('/dashboard', \App\Livewire\Student\Dashboard::class)->name('dashboard');
 
-    Route::get('/token/{exam}', function (Exam $exam) {
-        return view('livewire.student.token-entry', compact('exam'))->layout('layouts.digitest');
-    })->name('token');
-
-    // Livewire component for token entry
     Route::get('/token/{exam}', \App\Livewire\Student\TokenEntry::class)->name('token');
 
     Route::get('/exam/{session}', \App\Livewire\Student\ExamPage::class)->name('exam');
@@ -56,7 +50,6 @@ Route::middleware(['auth', 'verified'])->prefix('teacher')->name('teacher.')->gr
     Route::get('/dashboard', \App\Livewire\Teacher\Dashboard::class)->name('dashboard');
 
     Route::get('/subject/{subject}', function (Subject $subject) {
-        // Guard: only the teacher who owns this subject
         if ($subject->teacher_id !== auth()->user()->teacher?->id && !auth()->user()->isAdmin()) {
             abort(403);
         }
@@ -64,7 +57,7 @@ Route::middleware(['auth', 'verified'])->prefix('teacher')->name('teacher.')->gr
             ->layout('layouts.digitest', ['title' => $subject->name]);
     })->name('subject');
 
-    // Route::get('/monitor/{exam}', \App\Livewire\Teacher\ExamMonitor::class)->name('monitor');
+    Route::get('/monitor/{exam}', \App\Livewire\Teacher\ExamMonitor::class)->name('monitor');
 
     // Route::get('/exam/{exam}/results', \App\Livewire\Teacher\ExamResults::class)->name('exam-results');
 });
@@ -73,7 +66,6 @@ Route::middleware(['auth', 'verified'])->prefix('teacher')->name('teacher.')->gr
 // ADMIN ROUTES
 // ============================================================
 // Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
-
 //     Route::get('/dashboard', \App\Livewire\Admin\Dashboard::class)->name('dashboard');
 //     Route::get('/users', \App\Livewire\Admin\Users::class)->name('users');
 //     Route::get('/subjects', \App\Livewire\Admin\Subjects::class)->name('subjects');
