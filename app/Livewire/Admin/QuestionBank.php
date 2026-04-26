@@ -1,9 +1,10 @@
 <?php
-// app/Livewire/Teacher/QuestionBank.php
+// app/Livewire/Admin/QuestionBank.php
 
-namespace App\Livewire\Teacher;
+namespace App\Livewire\Admin;
 
 use App\Models\Question;
+use App\Models\Subject;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -11,31 +12,30 @@ class QuestionBank extends Component
 {
     use WithPagination;
 
-    public int $subjectId;
-
     // Form state
     public bool $showForm    = false;
     public ?int $editId      = null;
     public bool $showPreview = false;
     public ?int $previewId   = null;
+    public string $search    = '';
 
     // Form fields
-    public string $title              = '';
-    public string $googleFormUrl      = '';
-    public string $googleFormEditUrl  = '';
-    public string $googleSheetUrl     = '';
-    public string $description        = '';
-    public int    $duration           = 60;
-    public bool   $isActive           = true;
-
-    public function mount(int $subjectId): void
-    {
-        $this->subjectId = $subjectId;
-    }
+    public string $title             = '';
+    public string $googleFormUrl     = '';
+    public string $googleFormEditUrl = '';
+    public string $googleSheetUrl    = '';
+    public string $description       = '';
+    public int    $duration          = 60;
+    public bool   $isActive          = true;
+    public int    $subjectId         = 0;
 
     public function getQuestionsProperty()
     {
-        return Question::where('subject_id', $this->subjectId)
+        return Question::with(['subject'])
+            ->when($this->search, fn($q) => $q->whereHas('subject', fn($sq) =>
+                $sq->where('name', 'like', "%{$this->search}%"))
+                ->orWhere('title', 'like', "%{$this->search}%")
+            )
             ->latest()
             ->paginate(10);
     }
@@ -49,6 +49,7 @@ class QuestionBank extends Component
             'googleSheetUrl'    => 'nullable|url|max:1000',
             'description'       => 'nullable|string|max:1000',
             'duration'          => 'required|integer|min:5|max:300',
+            'subjectId'         => 'required|integer|min:1',
         ]);
 
         Question::updateOrCreate(
@@ -73,15 +74,16 @@ class QuestionBank extends Component
     public function edit(int $id): void
     {
         $q = Question::findOrFail($id);
-        $this->editId             = $id;
-        $this->title              = $q->title;
-        $this->googleFormUrl      = $q->google_form_url;
-        $this->googleFormEditUrl  = $q->google_form_edit_url ?? '';
-        $this->googleSheetUrl     = $q->google_sheet_url ?? '';
-        $this->description        = $q->description ?? '';
-        $this->duration           = $q->duration;
-        $this->isActive           = $q->is_active;
-        $this->showForm           = true;
+        $this->editId            = $id;
+        $this->subjectId         = $q->subject_id;
+        $this->title             = $q->title;
+        $this->googleFormUrl     = $q->google_form_url;
+        $this->googleFormEditUrl = $q->google_form_edit_url ?? '';
+        $this->googleSheetUrl    = $q->google_sheet_url ?? '';
+        $this->description       = $q->description ?? '';
+        $this->duration          = $q->duration;
+        $this->isActive          = $q->is_active;
+        $this->showForm          = true;
     }
 
     public function delete(int $id): void
@@ -115,7 +117,7 @@ class QuestionBank extends Component
     {
         $this->reset([
             'showForm', 'editId', 'title', 'googleFormUrl',
-            'googleFormEditUrl', 'googleSheetUrl', 'description',
+            'googleFormEditUrl', 'googleSheetUrl', 'description', 'subjectId',
         ]);
         $this->duration = 60;
         $this->isActive = true;
@@ -123,6 +125,8 @@ class QuestionBank extends Component
 
     public function render()
     {
-        return view('livewire.teacher.question-bank');
+        $subjects = Subject::with('teacher.user')->orderBy('name')->get();
+        return view('livewire.admin.question-bank', compact('subjects'))
+            ->layout('components.layouts.digitest', ['title' => 'Bank Soal']);
     }
 }

@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Models\Subject;
 
 Route::view('/', 'auth.login')->name('home');
+Route::view('/login', 'auth.login')->name('home');
 
 // ============================================================
 // REDIRECT after login based on role

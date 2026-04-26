@@ -1,6 +1,5 @@
 /* ============================================================
-   DigiTest SELSA — Mobile-First CSS
-   Sesuai desain screenshot aplikasi
+   DigiTest SELSA — Mobile-First CSS (Updated)
    ============================================================ */
 
 /* ==================== RESET & BASE ==================== */
@@ -81,20 +80,10 @@ body {
     overflow: hidden;
 }
 
-.digi-header-logo:last-child {
-    margin-left: -8px;
-}
+.digi-header-logo:last-child { margin-left: -8px; }
+.digi-header-logo img { width: 100%; height: 100%; object-fit: cover; }
 
-.digi-header-logo img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.digi-header-brand {
-    flex: 1;
-    min-width: 0;
-}
+.digi-header-brand { flex: 1; min-width: 0; }
 
 .digi-header-school {
     font-size: 10px;
@@ -117,10 +106,6 @@ body {
     align-items: center;
     gap: 8px;
     flex-shrink: 0;
-}
-
-.digi-header-user-info {
-    text-align: right;
 }
 
 .digi-header-user-name {
@@ -184,22 +169,35 @@ body {
     margin-bottom: 12px;
 }
 
+/* ==================== BACK BUTTON ==================== */
+.digi-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--digi-red);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    margin-bottom: 14px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+}
+.digi-back-btn:hover { opacity: 0.8; }
+
 /* ==================== KARTU / CARD ==================== */
 .digi-card {
     background: var(--digi-card-bg);
     border-radius: var(--digi-radius);
     box-shadow: var(--digi-shadow);
     overflow: hidden;
-}
-
-.digi-card + .digi-card {
-    margin-top: 12px;
-}
-
-.digi-card-body {
     padding: 16px;
 }
 
+.digi-card + .digi-card { margin-top: 12px; }
+.digi-card-body { padding: 16px; }
 .digi-card-header {
     padding: 14px 16px;
     border-bottom: 0.5px solid var(--digi-border);
@@ -214,37 +212,8 @@ body {
     margin-bottom: 12px;
 }
 
-.digi-greeting-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--digi-text-primary);
-    margin-bottom: 2px;
-}
-
-.digi-greeting-subtitle {
-    font-size: 13px;
-    color: var(--digi-text-secondary);
-}
-
-/* ==================== FORM SISWA (login setelah masuk) ==================== */
-.digi-welcome-form {
-    background: var(--digi-card-bg);
-    border-radius: var(--digi-radius);
-    padding: 20px 16px;
-    box-shadow: var(--digi-shadow);
-    margin-bottom: 20px;
-}
-
-.digi-welcome-form-title {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--digi-text-primary);
-    margin-bottom: 16px;
-}
-
-.digi-form-group {
-    margin-bottom: 12px;
-}
+/* ==================== FORM ==================== */
+.digi-form-group { margin-bottom: 12px; }
 
 .digi-form-label {
     font-size: 13px;
@@ -273,11 +242,9 @@ body {
     box-shadow: 0 0 0 3px rgba(192,57,43,0.1);
 }
 
-.digi-form-input::placeholder {
-    color: var(--digi-text-muted);
-}
+.digi-form-input::placeholder { color: var(--digi-text-muted); }
 
-/* ==================== GRID MATA PELAJARAN (3 kolom) ==================== */
+/* ==================== GRID MATA PELAJARAN ==================== */
 .digi-section-label {
     font-size: 17px;
     font-weight: 600;
@@ -308,28 +275,12 @@ body {
     text-decoration: none;
 }
 
-.digi-mapel-card:active {
-    transform: scale(0.96);
-}
+.digi-mapel-card:active { transform: scale(0.96); }
+.digi-mapel-icon { font-size: 28px; line-height: 1; }
+.digi-mapel-name { font-size: 11px; font-weight: 600; color: var(--digi-text-primary); line-height: 1.2; }
+.digi-mapel-count { font-size: 10px; color: var(--digi-text-secondary); }
 
-.digi-mapel-icon {
-    font-size: 28px;
-    line-height: 1;
-}
-
-.digi-mapel-name {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--digi-text-primary);
-    line-height: 1.2;
-}
-
-.digi-mapel-count {
-    font-size: 10px;
-    color: var(--digi-text-secondary);
-}
-
-/* ==================== DASHBOARD GURU ==================== */
+/* ==================== DASHBOARD ==================== */
 .digi-dashboard-section {
     font-size: 17px;
     font-weight: 600;
@@ -350,23 +301,11 @@ body {
     color: inherit;
 }
 
-.digi-dashboard-card:active {
-    transform: scale(0.98);
-}
+.digi-dashboard-card:active { transform: scale(0.98); }
+.digi-dashboard-card-title { font-size: 15px; font-weight: 600; color: var(--digi-text-primary); margin-bottom: 2px; }
+.digi-dashboard-card-subtitle { font-size: 13px; color: var(--digi-text-secondary); }
 
-.digi-dashboard-card-title {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--digi-text-primary);
-    margin-bottom: 2px;
-}
-
-.digi-dashboard-card-subtitle {
-    font-size: 13px;
-    color: var(--digi-text-secondary);
-}
-
-/* ==================== DASHBOARD ADMIN — 2 kolom ==================== */
+/* ==================== DASHBOARD ADMIN ==================== */
 .digi-admin-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -387,16 +326,7 @@ body {
     color: inherit;
 }
 
-.digi-admin-card:active {
-    transform: scale(0.97);
-}
-
-.digi-admin-card-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--digi-text-primary);
-    line-height: 1.3;
-}
+.digi-admin-card:active { transform: scale(0.97); }
 
 .digi-admin-card-full {
     background: var(--digi-card-bg);
@@ -412,10 +342,7 @@ body {
     margin-bottom: 10px;
 }
 
-.digi-admin-card-full:active {
-    transform: scale(0.98);
-}
-
+.digi-admin-card-full:active { transform: scale(0.98); }
 .digi-admin-card-full-title {
     font-size: 14px;
     font-weight: 600;
@@ -424,259 +351,43 @@ body {
     text-transform: uppercase;
 }
 
-/* ==================== HALAMAN DATA (Guru/Siswa) ==================== */
-.digi-data-page {
-    background: var(--digi-bg);
-    min-height: calc(100vh - 60px);
-}
-
-.digi-data-header {
-    padding: 16px 16px 0;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--digi-text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 10px;
-}
-
-.digi-data-table-wrap {
-    background: var(--digi-card-bg);
+/* ==================== DATA TABLE WRAPPER (RESPONSIVE) ==================== */
+.digi-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
     border-radius: var(--digi-radius);
-    margin: 0 16px;
+    background: var(--digi-card-bg);
     box-shadow: var(--digi-shadow);
-    overflow: hidden;
-    min-height: 300px;
-}
-
-/* ==================== HALAMAN MAPEL (form soal) ==================== */
-.digi-mapel-page-title {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--digi-text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 16px 16px 0;
-    margin-bottom: 10px;
-}
-
-.digi-mapel-form-card {
-    background: var(--digi-card-bg);
-    border-radius: var(--digi-radius);
-    margin: 0 16px;
-    box-shadow: var(--digi-shadow);
-    overflow: hidden;
-}
-
-.digi-mapel-form-section {
-    padding: 16px;
-}
-
-.digi-mapel-form-label {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--digi-text-primary);
-    margin-bottom: 8px;
-    display: block;
-}
-
-.digi-mapel-form-input {
-    width: 100%;
-    background: var(--digi-bg);
-    border: 0.5px solid var(--digi-border);
-    border-radius: var(--digi-radius-sm);
-    padding: 10px 12px;
-    font-size: 15px;
-    color: var(--digi-text-primary);
-    outline: none;
-    transition: border-color 0.15s;
-    -webkit-appearance: none;
-}
-
-.digi-mapel-form-input:focus {
-    border-color: var(--digi-red);
-    background: white;
-    box-shadow: 0 0 0 3px rgba(192,57,43,0.1);
-}
-
-.digi-mapel-form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    padding: 12px 16px 16px;
-}
-
-.digi-btn-simpan {
-    background: var(--digi-card-bg);
-    border: 0.5px solid var(--digi-border);
-    border-radius: var(--digi-radius-sm);
-    padding: 9px 20px;
-    font-size: 15px;
-    font-weight: 500;
-    color: var(--digi-text-primary);
-    cursor: pointer;
-    -webkit-appearance: none;
-}
-
-.digi-btn-batal {
-    background: var(--digi-card-bg);
-    border: 0.5px solid var(--digi-border);
-    border-radius: var(--digi-radius-sm);
-    padding: 9px 20px;
-    font-size: 15px;
-    font-weight: 500;
-    color: var(--digi-text-primary);
-    cursor: pointer;
-    -webkit-appearance: none;
-}
-
-/* ==================== LOGIN PAGE ==================== */
-.digi-login-page {
-    min-height: 100vh;
-    background: var(--digi-bg);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 24px 16px;
-}
-
-.digi-login-logos {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    margin-bottom: 16px;
-}
-
-.digi-login-badge {
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
-    overflow: hidden;
-    background: #e5e5ea;
-    border: 2px solid rgba(0,0,0,0.08);
-}
-
-.digi-login-badge img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.digi-login-app-name {
-    font-size: 24px;
-    font-weight: 700;
-    color: var(--digi-text-primary);
-    text-align: center;
-    margin-bottom: 4px;
-    letter-spacing: -0.3px;
-}
-
-.digi-login-tagline {
-    font-size: 13px;
-    color: var(--digi-text-secondary);
-    text-align: center;
-    margin-bottom: 32px;
-    line-height: 1.4;
-}
-
-.digi-login-form {
-    width: 100%;
-    max-width: 380px;
-}
-
-.digi-login-field {
-    background: var(--digi-card-bg);
-    border: 0.5px solid var(--digi-border);
-    border-radius: var(--digi-radius-sm);
-    margin-bottom: 8px;
-    overflow: hidden;
-}
-
-.digi-login-input {
-    width: 100%;
-    border: none;
-    outline: none;
-    background: transparent;
-    padding: 14px 16px;
-    font-size: 16px;
-    color: var(--digi-text-primary);
-    -webkit-appearance: none;
-}
-
-.digi-login-input::placeholder {
-    color: var(--digi-text-muted);
-}
-
-.digi-login-show-pwd {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 0;
-    margin-bottom: 20px;
-}
-
-.digi-login-show-pwd input[type="checkbox"] {
-    accent-color: var(--digi-red);
-    width: 14px;
-    height: 14px;
-}
-
-.digi-login-show-pwd label {
-    font-size: 13px;
-    color: var(--digi-text-secondary);
-    cursor: pointer;
-}
-
-.digi-login-btn {
-    width: 100%;
-    background: var(--digi-red);
-    color: white;
-    border: none;
-    border-radius: var(--digi-radius-sm);
-    padding: 15px;
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    -webkit-appearance: none;
-    transition: background 0.15s, transform 0.1s;
-}
-
-.digi-login-btn:active {
-    background: var(--digi-red-dark);
-    transform: scale(0.98);
 }
 
 /* ==================== TABEL ==================== */
 .digi-table {
     width: 100%;
     border-collapse: collapse;
+    min-width: 520px; /* prevent crushing on mobile */
 }
 
 .digi-table th {
     text-align: left;
-    padding: 10px 16px;
-    font-size: 12px;
+    padding: 10px 12px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--digi-text-secondary);
     background: var(--digi-bg);
     border-bottom: 0.5px solid var(--digi-border);
     text-transform: uppercase;
     letter-spacing: 0.3px;
+    white-space: nowrap;
 }
 
 .digi-table td {
-    padding: 12px 16px;
-    font-size: 14px;
+    padding: 10px 12px;
+    font-size: 13px;
     color: var(--digi-text-primary);
     border-bottom: 0.5px solid var(--digi-border);
 }
 
-.digi-table tr:last-child td {
-    border-bottom: none;
-}
+.digi-table tr:last-child td { border-bottom: none; }
 
 /* ==================== BADGE / STATUS ==================== */
 .digi-badge {
@@ -684,23 +395,46 @@ body {
     align-items: center;
     padding: 3px 10px;
     border-radius: 100px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
 }
 
-.digi-badge-aktif {
+.digi-badge-aktif { background: #D4EDDA; color: #155724; }
+.digi-badge-draft { background: var(--digi-bg); color: var(--digi-text-secondary); }
+.digi-badge-selesai { background: #E2D9F3; color: #4A235A; }
+
+/* badge helpers used throughout views */
+.badge-aktif {
+    display: inline-flex;
+    align-items: center;
     background: #D4EDDA;
     color: #155724;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 600;
 }
 
-.digi-badge-draft {
-    background: var(--digi-bg);
-    color: var(--digi-text-secondary);
+.badge-draft {
+    display: inline-flex;
+    align-items: center;
+    background: #F3F4F6;
+    color: #9CA3AF;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 600;
 }
 
-.digi-badge-selesai {
+.badge-selesai {
+    display: inline-flex;
+    align-items: center;
     background: #E2D9F3;
     color: #4A235A;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 600;
 }
 
 /* ==================== STATS ROW ==================== */
@@ -719,6 +453,13 @@ body {
     text-align: center;
 }
 
+.digi-stat {
+    background: var(--digi-card-bg);
+    border-radius: var(--digi-radius);
+    padding: 14px 12px;
+    box-shadow: var(--digi-shadow);
+}
+
 .digi-stat-value {
     font-size: 26px;
     font-weight: 700;
@@ -733,7 +474,7 @@ body {
     font-weight: 500;
 }
 
-/* ==================== UJIAN CARD (student dashboard) ==================== */
+/* ==================== UJIAN CARD ==================== */
 .digi-exam-card {
     background: var(--digi-card-bg);
     border-radius: var(--digi-radius);
@@ -742,18 +483,8 @@ body {
     margin-bottom: 10px;
 }
 
-.digi-exam-title {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--digi-text-primary);
-    margin-bottom: 4px;
-}
-
-.digi-exam-meta {
-    font-size: 13px;
-    color: var(--digi-text-secondary);
-    margin-bottom: 12px;
-}
+.digi-exam-title { font-size: 15px; font-weight: 600; color: var(--digi-text-primary); margin-bottom: 4px; }
+.digi-exam-meta { font-size: 13px; color: var(--digi-text-secondary); margin-bottom: 12px; }
 
 .digi-exam-btn {
     display: block;
@@ -928,17 +659,8 @@ body {
     -webkit-appearance: none;
 }
 
-.digi-num-btn.answered {
-    background: #D4EDDA;
-    border-color: #28a745;
-    color: #155724;
-}
-
-.digi-num-btn.current {
-    background: var(--digi-red);
-    border-color: var(--digi-red);
-    color: white;
-}
+.digi-num-btn.answered { background: #D4EDDA; border-color: #28a745; color: #155724; }
+.digi-num-btn.current { background: var(--digi-red); border-color: var(--digi-red); color: white; }
 
 /* ==================== RESULT PAGE ==================== */
 .digi-result-hero {
@@ -950,20 +672,8 @@ body {
     margin-bottom: 12px;
 }
 
-.digi-result-score {
-    font-size: 64px;
-    font-weight: 800;
-    color: var(--digi-red);
-    line-height: 1;
-    margin-bottom: 4px;
-}
-
-.digi-result-grade {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--digi-text-primary);
-    margin-bottom: 8px;
-}
+.digi-result-score { font-size: 64px; font-weight: 800; color: var(--digi-red); line-height: 1; margin-bottom: 4px; }
+.digi-result-grade { font-size: 18px; font-weight: 700; color: var(--digi-text-primary); margin-bottom: 8px; }
 
 .digi-result-status-pass {
     display: inline-flex;
@@ -999,19 +709,17 @@ body {
     color: white;
     border: none;
     border-radius: var(--digi-radius-sm);
-    padding: 11px 20px;
-    font-size: 15px;
+    padding: 10px 18px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     text-decoration: none;
     -webkit-appearance: none;
     transition: background 0.1s, transform 0.1s;
+    font-family: inherit;
 }
 
-.digi-btn-primary:active {
-    background: var(--digi-red-dark);
-    transform: scale(0.97);
-}
+.digi-btn-primary:active { background: var(--digi-red-dark); transform: scale(0.97); }
 
 .digi-btn-secondary {
     display: inline-flex;
@@ -1022,18 +730,74 @@ body {
     color: var(--digi-text-primary);
     border: 0.5px solid var(--digi-border);
     border-radius: var(--digi-radius-sm);
-    padding: 11px 20px;
-    font-size: 15px;
+    padding: 10px 18px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     text-decoration: none;
     -webkit-appearance: none;
+    font-family: inherit;
 }
 
-/* ==================== NAV / SIDEBAR (hidden on mobile) ==================== */
-.digi-sidebar {
-    display: none;
+/* Aliases used in views */
+.btn-digi-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: var(--digi-red);
+    color: white;
+    border: none;
+    border-radius: var(--digi-radius-sm);
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    -webkit-appearance: none;
+    transition: background 0.1s, transform 0.1s;
+    font-family: inherit;
 }
+
+.btn-digi-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.btn-digi-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: white;
+    color: var(--digi-text-primary);
+    border: 1.5px solid var(--digi-border);
+    border-radius: var(--digi-radius-sm);
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    -webkit-appearance: none;
+    font-family: inherit;
+}
+
+.btn-digi-success {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: #27AE60;
+    color: white;
+    border: none;
+    border-radius: var(--digi-radius-sm);
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    -webkit-appearance: none;
+    font-family: inherit;
+}
+
+.btn-digi-success:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* ==================== VIOLATION ALERT ==================== */
 .digi-violation-alert {
@@ -1090,10 +854,7 @@ body {
     color: var(--digi-text-muted);
 }
 
-.digi-empty-icon {
-    font-size: 40px;
-    margin-bottom: 12px;
-}
+.digi-empty-icon { font-size: 40px; margin-bottom: 12px; }
 
 .digi-empty-text {
     font-size: 15px;
@@ -1117,9 +878,7 @@ body {
     transition: width 0.3s;
 }
 
-.digi-progress-bar.green {
-    background: var(--digi-green);
-}
+.digi-progress-bar.green { background: var(--digi-green); }
 
 /* ==================== DIVIDER ==================== */
 .digi-divider {
@@ -1129,37 +888,68 @@ body {
 }
 
 /* ==================== LOADING ==================== */
-[wire\:loading] {
-    opacity: 0.6;
+[wire\:loading] { opacity: 0.6; }
+
+/* ==================== LOGIN PAGE ==================== */
+.digi-login-page {
+    min-height: 100vh;
+    background: var(--digi-bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
 }
 
-/* ==================== DESKTOP FALLBACK (tablet ke atas) ==================== */
+.digi-login-btn {
+    width: 100%;
+    background: var(--digi-red);
+    color: white;
+    border: none;
+    border-radius: var(--digi-radius-sm);
+    padding: 15px;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    -webkit-appearance: none;
+    transition: background 0.15s, transform 0.1s;
+}
+
+.digi-login-btn:active { background: var(--digi-red-dark); transform: scale(0.98); }
+
+/* ==================== MOBILE RESPONSIVE HELPERS ==================== */
+.digi-scroll-x {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Stack grid on tiny screens */
+@media (max-width: 380px) {
+    .digi-admin-grid {
+        grid-template-columns: 1fr;
+    }
+    .digi-stats-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* ==================== DESKTOP FALLBACK ==================== */
 @media (min-width: 768px) {
     .digi-page {
-        max-width: 480px;
+        max-width: 520px;
         margin: 0 auto;
         padding: 20px 16px;
     }
 
-    .digi-login-page {
-        background: var(--digi-bg);
-    }
+    .digi-login-page { background: var(--digi-bg); }
 
-    .digi-login-form {
-        max-width: 400px;
-    }
-
-    .digi-sidebar {
-        display: none;
-    }
+    .digi-table th { padding: 12px 16px; font-size: 12px; }
+    .digi-table td { padding: 12px 16px; font-size: 14px; }
 }
 
 /* ==================== PRINT ==================== */
 @media print {
-    .digi-header, .digi-sidebar, .digi-btn-primary, .digi-btn-secondary {
-        display: none !important;
-    }
-    body {
-        background: white;
-    }
+    .digi-header, .digi-sidebar, .digi-btn-primary, .digi-btn-secondary { display: none !important; }
+    body { background: white; }
 }
