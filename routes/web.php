@@ -58,7 +58,7 @@ Route::middleware(['auth', 'verified'])->prefix('teacher')->name('teacher.')->gr
 
     Route::get('/monitor/{exam}', \App\Livewire\Teacher\ExamMonitor::class)->name('monitor');
 
-    Route::get('/exam/{exam}/results', \App\Livewire\Teacher\ExamResults::class)->name('exam-results');
+    // Route::get('/exam/{exam}/results', \App\Livewire\Teacher\ExamResults::class)->name('exam-results');
 });
 
 // ============================================================
