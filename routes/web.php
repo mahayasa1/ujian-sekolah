@@ -24,8 +24,7 @@ Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->gr
 
     Route::get('/dashboard', \App\Livewire\Student\Dashboard::class)->name('dashboard');
 
-    Route::get('/token/{exam}', \App\Livewire\Student\TokenEntry::class)->name('token');
-
+    // Halaman ujian (token diinput via popup di dashboard)
     Route::get('/exam/{session}', \App\Livewire\Student\ExamPage::class)->name('exam');
 
     Route::get('/result/{session}', \App\Livewire\Student\Result::class)->name('result');
@@ -38,7 +37,7 @@ Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->gr
             ->latest()
             ->paginate(15);
         return view('livewire.student.results-list', compact('sessions'))
-            ->layout('layouts.digitest', ['title' => 'Hasil Ujian Saya']);
+            ->layout('components.layouts.digitest', ['title' => 'Hasil Ujian Saya']);
     })->name('results');
 });
 
@@ -54,12 +53,12 @@ Route::middleware(['auth', 'verified'])->prefix('teacher')->name('teacher.')->gr
             abort(403);
         }
         return view('livewire.teacher.subject', compact('subject'))
-            ->layout('layouts.digitest', ['title' => $subject->name]);
+            ->layout('components.layouts.digitest', ['title' => $subject->name]);
     })->name('subject');
 
     Route::get('/monitor/{exam}', \App\Livewire\Teacher\ExamMonitor::class)->name('monitor');
 
-    // Route::get('/exam/{exam}/results', \App\Livewire\Teacher\ExamResults::class)->name('exam-results');
+    Route::get('/exam/{exam}/results', \App\Livewire\Teacher\ExamResults::class)->name('exam-results');
 });
 
 // ============================================================
@@ -70,6 +69,16 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('/users', \App\Livewire\Admin\Users::class)->name('users');
     Route::get('/subjects', \App\Livewire\Admin\Subjects::class)->name('subjects');
     Route::get('/classes', \App\Livewire\Admin\Classes::class)->name('classes');
+
+    // Data Guru — tampil list user role guru
+    Route::get('/data-guru', function () {
+        $teachers = \App\Models\User::where('role', 'guru')
+            ->with('teacher')
+            ->latest()
+            ->get();
+        return view('livewire.admin.data_guru', compact('teachers'))
+            ->layout('components.layouts.digitest', ['title' => 'Data Guru']);
+    })->name('data_guru');
 });
 
 require __DIR__.'/settings.php';

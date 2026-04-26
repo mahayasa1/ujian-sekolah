@@ -28,7 +28,13 @@ class Users extends Component
     public string $nis = '';
     public int $classRoomId = 0;
 
-    public string $deleteConfirmId = '';
+    public function mount()
+    {
+        // Baca filter role dari query string (misal dari dashboard)
+        if (request()->has('role')) {
+            $this->roleFilter = request('role');
+        }
+    }
 
     public function getUsersProperty()
     {
@@ -59,7 +65,7 @@ class Users extends Component
             Teacher::updateOrCreate(['user_id' => $user->id], ['nip' => $this->nip ?: null]);
         } elseif ($this->role === 'siswa') {
             Student::updateOrCreate(['user_id' => $user->id], [
-                'nis' => $this->nis ?: null,
+                'nis'           => $this->nis ?: null,
                 'class_room_id' => $this->classRoomId ?: null,
             ]);
         }
@@ -71,14 +77,14 @@ class Users extends Component
     public function edit(int $id)
     {
         $user = User::with(['teacher', 'student'])->find($id);
-        $this->editId = $id;
-        $this->name   = $user->name;
-        $this->email  = $user->email;
-        $this->role   = $user->role;
-        $this->nip    = $user->teacher?->nip ?? '';
-        $this->nis    = $user->student?->nis ?? '';
+        $this->editId      = $id;
+        $this->name        = $user->name;
+        $this->email       = $user->email;
+        $this->role        = $user->role;
+        $this->nip         = $user->teacher?->nip ?? '';
+        $this->nis         = $user->student?->nis ?? '';
         $this->classRoomId = $user->student?->class_room_id ?? 0;
-        $this->showForm = true;
+        $this->showForm    = true;
     }
 
     public function delete(int $id)

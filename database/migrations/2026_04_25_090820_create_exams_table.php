@@ -16,6 +16,7 @@ return new class extends Migration {
             $table->timestamp('start_at')->nullable();
             $table->timestamp('end_at')->nullable();
             $table->string('token', 10)->unique();
+            $table->string('google_form_url')->nullable();
             $table->enum('status', ['draft', 'aktif', 'selesai'])->default('draft');
             $table->boolean('random_question')->default(false);
             $table->integer('total_questions')->default(0);
