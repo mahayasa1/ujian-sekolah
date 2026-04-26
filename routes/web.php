@@ -65,11 +65,11 @@ Route::middleware(['auth', 'verified'])->prefix('teacher')->name('teacher.')->gr
 // ============================================================
 // ADMIN ROUTES
 // ============================================================
-// Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
-//     Route::get('/dashboard', \App\Livewire\Admin\Dashboard::class)->name('dashboard');
-//     Route::get('/users', \App\Livewire\Admin\Users::class)->name('users');
-//     Route::get('/subjects', \App\Livewire\Admin\Subjects::class)->name('subjects');
-//     Route::get('/classes', \App\Livewire\Admin\Classes::class)->name('classes');
-// });
+Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', \App\Livewire\Admin\Dashboard::class)->name('dashboard');
+    Route::get('/users', \App\Livewire\Admin\Users::class)->name('users');
+    Route::get('/subjects', \App\Livewire\Admin\Subjects::class)->name('subjects');
+    Route::get('/classes', \App\Livewire\Admin\Classes::class)->name('classes');
+});
 
 require __DIR__.'/settings.php';

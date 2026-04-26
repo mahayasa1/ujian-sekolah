@@ -1,556 +1,1165 @@
-/* DigiTest SELSA - Custom CSS */
+/* ============================================================
+   DigiTest SELSA — Mobile-First CSS
+   Sesuai desain screenshot aplikasi
+   ============================================================ */
+
+/* ==================== RESET & BASE ==================== */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
 
 :root {
     --digi-red: #C0392B;
-    --digi-red-dark: #922B21;
-    --digi-red-light: #F1948A;
-    --digi-gold: #F39C12;
+    --digi-red-dark: #A93226;
+    --digi-red-gradient-from: #C0392B;
+    --digi-red-gradient-to: #922B21;
     --digi-white: #FFFFFF;
-    --digi-gray-50: #F9FAFB;
-    --digi-gray-100: #F3F4F6;
-    --digi-gray-200: #E5E7EB;
-    --digi-gray-600: #4B5563;
-    --digi-gray-800: #1F2937;
-    --digi-green: #27AE60;
-    --digi-green-light: #D5F5E3;
-    --digi-red-bg: #FDEDEC;
+    --digi-bg: #F2F2F7;
+    --digi-card-bg: #FFFFFF;
+    --digi-border: #E5E5EA;
+    --digi-text-primary: #1C1C1E;
+    --digi-text-secondary: #8E8E93;
+    --digi-text-muted: #AEAEB2;
+    --digi-green: #34C759;
+    --digi-blue: #007AFF;
+    --digi-gold: #F39C12;
+    --digi-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    --digi-radius: 12px;
+    --digi-radius-sm: 8px;
+    --digi-radius-lg: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+body {
+    background: var(--digi-bg);
+    color: var(--digi-text-primary);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.5;
 }
 
 /* ==================== HEADER ==================== */
 .digi-header {
-    background: linear-gradient(135deg, #C0392B 0%, #922B21 100%);
-    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
-}
-
-.digi-header-brand {
+    background: linear-gradient(135deg, var(--digi-red-gradient-from) 0%, var(--digi-red-gradient-to) 100%);
+    padding: 0 16px;
+    height: 60px;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    color: white;
-}
-
-.digi-header-brand h1 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    color: white;
-    margin: 0;
-}
-
-.digi-header-brand p {
-    font-size: 0.65rem;
-    color: rgba(255,255,255,0.8);
-    margin: 0;
-    letter-spacing: 0.3px;
-}
-
-/* ==================== SIDEBAR ==================== */
-.digi-sidebar {
-    background: var(--digi-white);
-    border-right: 1px solid var(--digi-gray-200);
-    min-height: calc(100vh - 64px);
-}
-
-.digi-nav-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.65rem 1rem;
-    border-radius: 0.5rem;
-    color: var(--digi-gray-600);
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: all 0.15s;
-    text-decoration: none;
-    margin: 0.15rem 0;
-}
-
-.digi-nav-item:hover {
-    background: var(--digi-red-bg);
-    color: var(--digi-red);
-}
-
-.digi-nav-item.active {
-    background: var(--digi-red-bg);
-    color: var(--digi-red);
-    font-weight: 600;
-}
-
-.digi-nav-item .nav-icon {
-    width: 20px;
-    height: 20px;
-    opacity: 0.7;
-}
-
-.digi-nav-item.active .nav-icon {
-    opacity: 1;
-}
-
-/* ==================== CARDS ==================== */
-.digi-card {
-    background: var(--digi-white);
-    border: 1px solid var(--digi-gray-200);
-    border-radius: 0.75rem;
-    padding: 1.25rem;
-    transition: box-shadow 0.2s;
-}
-
-.digi-card:hover {
-    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-}
-
-.digi-card-subject {
-    background: var(--digi-white);
-    border: 1.5px solid var(--digi-gray-200);
-    border-radius: 0.75rem;
-    padding: 1.5rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-}
-
-.digi-card-subject::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, var(--digi-red), var(--digi-gold));
-}
-
-.digi-card-subject:hover {
-    border-color: var(--digi-red);
-    box-shadow: 0 4px 20px rgba(192,57,43,0.15);
-    transform: translateY(-2px);
-}
-
-.digi-subject-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: var(--digi-red-bg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 0.75rem;
-    font-size: 1.5rem;
-}
-
-/* ==================== STATS CARDS ==================== */
-.digi-stat {
-    background: var(--digi-white);
-    border: 1px solid var(--digi-gray-200);
-    border-radius: 0.75rem;
-    padding: 1.25rem;
-}
-
-.digi-stat-value {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--digi-red);
-    line-height: 1;
-}
-
-.digi-stat-label {
-    font-size: 0.75rem;
-    color: var(--digi-gray-600);
-    margin-top: 0.25rem;
-}
-
-/* ==================== BUTTONS ==================== */
-.btn-digi-primary {
-    background: var(--digi-red);
-    color: white;
-    border: none;
-    padding: 0.6rem 1.25rem;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.btn-digi-primary:hover {
-    background: var(--digi-red-dark);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(192,57,43,0.3);
-}
-
-.btn-digi-outline {
-    background: transparent;
-    color: var(--digi-red);
-    border: 1.5px solid var(--digi-red);
-    padding: 0.55rem 1.25rem;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s;
-}
-
-.btn-digi-outline:hover {
-    background: var(--digi-red);
-    color: white;
-}
-
-.btn-digi-success {
-    background: var(--digi-green);
-    color: white;
-    border: none;
-    padding: 0.6rem 1.25rem;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s;
-}
-
-.btn-digi-success:hover {
-    background: #229954;
-}
-
-/* ==================== BADGES ==================== */
-.badge-aktif {
-    background: var(--digi-green-light);
-    color: #1E8449;
-    padding: 0.2rem 0.75rem;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
-.badge-draft {
-    background: var(--digi-gray-100);
-    color: var(--digi-gray-600);
-    padding: 0.2rem 0.75rem;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
-.badge-selesai {
-    background: #E8DAEF;
-    color: #7D3C98;
-    padding: 0.2rem 0.75rem;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
-/* ==================== TOKEN INPUT ==================== */
-.token-input {
-    width: 100%;
-    text-align: center;
-    font-size: 2rem;
-    font-weight: 700;
-    letter-spacing: 0.5rem;
-    padding: 1rem;
-    border: 2px solid var(--digi-gray-200);
-    border-radius: 0.75rem;
-    color: var(--digi-red);
-    text-transform: uppercase;
-    transition: border-color 0.2s;
-}
-
-.token-input:focus {
-    outline: none;
-    border-color: var(--digi-red);
-    box-shadow: 0 0 0 3px rgba(192,57,43,0.1);
-}
-
-/* ==================== EXAM PAGE ==================== */
-.exam-container {
-    display: grid;
-    grid-template-columns: 1fr 280px;
-    gap: 1.5rem;
-    min-height: calc(100vh - 120px);
-}
-
-.exam-question-panel {
-    background: var(--digi-white);
-    border: 1px solid var(--digi-gray-200);
-    border-radius: 0.75rem;
-    padding: 1.75rem;
-}
-
-.exam-sidebar-panel {
-    background: var(--digi-white);
-    border: 1px solid var(--digi-gray-200);
-    border-radius: 0.75rem;
-    padding: 1.25rem;
-    height: fit-content;
     position: sticky;
-    top: 80px;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.12);
 }
 
-.exam-timer {
-    background: var(--digi-red);
-    color: white;
-    padding: 0.75rem 1.25rem;
-    border-radius: 0.75rem;
-    text-align: center;
-    margin-bottom: 1rem;
-}
-
-.exam-timer-value {
-    font-size: 2rem;
-    font-weight: 700;
-    letter-spacing: 0.1rem;
-    font-family: 'Courier New', monospace;
-}
-
-.exam-timer.warning {
-    background: #E67E22;
-    animation: pulse 1s infinite;
-}
-
-.exam-timer.danger {
-    background: #C0392B;
-    animation: pulse 0.5s infinite;
-}
-
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.8; }
-}
-
-/* Question number grid */
-.question-number-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 0.4rem;
-    margin: 0.75rem 0;
-}
-
-.q-num-btn {
-    width: 100%;
-    aspect-ratio: 1;
-    border-radius: 0.4rem;
-    border: 1.5px solid var(--digi-gray-200);
-    background: var(--digi-white);
-    font-size: 0.75rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s;
-    color: var(--digi-gray-600);
-}
-
-.q-num-btn.answered {
-    background: var(--digi-green-light);
-    border-color: var(--digi-green);
-    color: #1E8449;
-}
-
-.q-num-btn.current {
-    background: var(--digi-red);
-    border-color: var(--digi-red);
-    color: white;
-}
-
-/* Option buttons */
-.option-btn {
+.digi-header-inner {
     display: flex;
     align-items: center;
-    gap: 1rem;
     width: 100%;
-    text-align: left;
-    padding: 0.875rem 1.25rem;
-    border: 2px solid var(--digi-gray-200);
-    border-radius: 0.75rem;
-    background: var(--digi-white);
-    cursor: pointer;
-    transition: all 0.2s;
-    font-size: 0.9rem;
-    color: var(--digi-gray-800);
-    margin-bottom: 0.625rem;
+    gap: 10px;
 }
 
-.option-btn:hover {
-    border-color: var(--digi-red-light);
-    background: var(--digi-red-bg);
-}
-
-.option-btn.selected {
-    border-color: var(--digi-red);
-    background: var(--digi-red-bg);
-    color: var(--digi-red);
-    font-weight: 600;
-}
-
-.option-circle {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    border: 2px solid currentColor;
+.digi-header-logos {
     display: flex;
     align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 0.875rem;
+    gap: 0;
     flex-shrink: 0;
 }
 
-.option-btn.selected .option-circle {
-    background: var(--digi-red);
-    border-color: var(--digi-red);
-    color: white;
-}
-
-/* ==================== RESULT PAGE ==================== */
-.result-score-circle {
-    width: 160px;
-    height: 160px;
+.digi-header-logo {
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
-    background: conic-gradient(var(--digi-red) var(--score-percent), var(--digi-gray-200) 0);
+    border: 2px solid rgba(255,255,255,0.7);
+    background: rgba(255,255,255,0.2);
+    object-fit: cover;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto;
-    position: relative;
+    overflow: hidden;
 }
 
-.result-score-inner {
-    width: 130px;
-    height: 130px;
+.digi-header-logo:last-child {
+    margin-left: -8px;
+}
+
+.digi-header-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.digi-header-brand {
+    flex: 1;
+    min-width: 0;
+}
+
+.digi-header-school {
+    font-size: 10px;
+    color: rgba(255,255,255,0.85);
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: 0.1px;
+}
+
+.digi-header-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #FFFFFF;
+    line-height: 1.2;
+    letter-spacing: -0.3px;
+}
+
+.digi-header-user {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.digi-header-user-info {
+    text-align: right;
+}
+
+.digi-header-user-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: white;
+    line-height: 1.2;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.digi-header-user-role {
+    font-size: 10px;
+    color: rgba(255,255,255,0.75);
+    line-height: 1.2;
+}
+
+.digi-header-avatar {
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
+    background: rgba(255,255,255,0.25);
+    border: 1.5px solid rgba(255,255,255,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+}
+
+.digi-header-logout {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.35);
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    flex-shrink: 0;
+    text-decoration: none;
+}
+
+/* ==================== PAGE LAYOUT ==================== */
+.digi-page {
+    background: var(--digi-bg);
+    min-height: calc(100vh - 60px);
+    padding: 16px;
+}
+
+.digi-page-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--digi-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+}
+
+/* ==================== KARTU / CARD ==================== */
+.digi-card {
+    background: var(--digi-card-bg);
+    border-radius: var(--digi-radius);
+    box-shadow: var(--digi-shadow);
+    overflow: hidden;
+}
+
+.digi-card + .digi-card {
+    margin-top: 12px;
+}
+
+.digi-card-body {
+    padding: 16px;
+}
+
+.digi-card-header {
+    padding: 14px 16px;
+    border-bottom: 0.5px solid var(--digi-border);
+}
+
+/* ==================== GREETING CARD ==================== */
+.digi-greeting-card {
+    background: var(--digi-card-bg);
+    border-radius: var(--digi-radius);
+    padding: 16px;
+    box-shadow: var(--digi-shadow);
+    margin-bottom: 12px;
+}
+
+.digi-greeting-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--digi-text-primary);
+    margin-bottom: 2px;
+}
+
+.digi-greeting-subtitle {
+    font-size: 13px;
+    color: var(--digi-text-secondary);
+}
+
+/* ==================== FORM SISWA (login setelah masuk) ==================== */
+.digi-welcome-form {
+    background: var(--digi-card-bg);
+    border-radius: var(--digi-radius);
+    padding: 20px 16px;
+    box-shadow: var(--digi-shadow);
+    margin-bottom: 20px;
+}
+
+.digi-welcome-form-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--digi-text-primary);
+    margin-bottom: 16px;
+}
+
+.digi-form-group {
+    margin-bottom: 12px;
+}
+
+.digi-form-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--digi-text-primary);
+    display: block;
+    margin-bottom: 6px;
+}
+
+.digi-form-input {
+    width: 100%;
+    background: var(--digi-bg);
+    border: 0.5px solid var(--digi-border);
+    border-radius: var(--digi-radius-sm);
+    padding: 10px 12px;
+    font-size: 15px;
+    color: var(--digi-text-primary);
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+}
+
+.digi-form-input:focus {
+    border-color: var(--digi-red);
     background: white;
+    box-shadow: 0 0 0 3px rgba(192,57,43,0.1);
+}
+
+.digi-form-input::placeholder {
+    color: var(--digi-text-muted);
+}
+
+/* ==================== GRID MATA PELAJARAN (3 kolom) ==================== */
+.digi-section-label {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--digi-text-primary);
+    margin: 20px 0 12px;
+}
+
+.digi-mapel-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.digi-mapel-card {
+    background: var(--digi-card-bg);
+    border-radius: var(--digi-radius);
+    aspect-ratio: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    box-shadow: var(--digi-shadow);
+    cursor: pointer;
+    padding: 12px 8px;
+    text-align: center;
+    transition: transform 0.1s, box-shadow 0.1s;
+    gap: 6px;
+    text-decoration: none;
 }
 
-/* ==================== LOGIN ==================== */
-.digi-login-wrap {
+.digi-mapel-card:active {
+    transform: scale(0.96);
+}
+
+.digi-mapel-icon {
+    font-size: 28px;
+    line-height: 1;
+}
+
+.digi-mapel-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--digi-text-primary);
+    line-height: 1.2;
+}
+
+.digi-mapel-count {
+    font-size: 10px;
+    color: var(--digi-text-secondary);
+}
+
+/* ==================== DASHBOARD GURU ==================== */
+.digi-dashboard-section {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--digi-text-primary);
+    margin: 20px 0 10px;
+}
+
+.digi-dashboard-card {
+    background: var(--digi-card-bg);
+    border-radius: var(--digi-radius);
+    padding: 16px;
+    box-shadow: var(--digi-shadow);
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: transform 0.1s;
+    text-decoration: none;
+    display: block;
+    color: inherit;
+}
+
+.digi-dashboard-card:active {
+    transform: scale(0.98);
+}
+
+.digi-dashboard-card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--digi-text-primary);
+    margin-bottom: 2px;
+}
+
+.digi-dashboard-card-subtitle {
+    font-size: 13px;
+    color: var(--digi-text-secondary);
+}
+
+/* ==================== DASHBOARD ADMIN — 2 kolom ==================== */
+.digi-admin-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.digi-admin-card {
+    background: var(--digi-card-bg);
+    border-radius: var(--digi-radius);
+    padding: 20px 12px;
+    box-shadow: var(--digi-shadow);
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.1s;
+    text-decoration: none;
+    display: block;
+    color: inherit;
+}
+
+.digi-admin-card:active {
+    transform: scale(0.97);
+}
+
+.digi-admin-card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--digi-text-primary);
+    line-height: 1.3;
+}
+
+.digi-admin-card-full {
+    background: var(--digi-card-bg);
+    border-radius: var(--digi-radius);
+    padding: 20px 16px;
+    box-shadow: var(--digi-shadow);
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.1s;
+    text-decoration: none;
+    display: block;
+    color: inherit;
+    margin-bottom: 10px;
+}
+
+.digi-admin-card-full:active {
+    transform: scale(0.98);
+}
+
+.digi-admin-card-full-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--digi-text-primary);
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+/* ==================== HALAMAN DATA (Guru/Siswa) ==================== */
+.digi-data-page {
+    background: var(--digi-bg);
+    min-height: calc(100vh - 60px);
+}
+
+.digi-data-header {
+    padding: 16px 16px 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--digi-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+}
+
+.digi-data-table-wrap {
+    background: var(--digi-card-bg);
+    border-radius: var(--digi-radius);
+    margin: 0 16px;
+    box-shadow: var(--digi-shadow);
+    overflow: hidden;
+    min-height: 300px;
+}
+
+/* ==================== HALAMAN MAPEL (form soal) ==================== */
+.digi-mapel-page-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--digi-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 16px 16px 0;
+    margin-bottom: 10px;
+}
+
+.digi-mapel-form-card {
+    background: var(--digi-card-bg);
+    border-radius: var(--digi-radius);
+    margin: 0 16px;
+    box-shadow: var(--digi-shadow);
+    overflow: hidden;
+}
+
+.digi-mapel-form-section {
+    padding: 16px;
+}
+
+.digi-mapel-form-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--digi-text-primary);
+    margin-bottom: 8px;
+    display: block;
+}
+
+.digi-mapel-form-input {
+    width: 100%;
+    background: var(--digi-bg);
+    border: 0.5px solid var(--digi-border);
+    border-radius: var(--digi-radius-sm);
+    padding: 10px 12px;
+    font-size: 15px;
+    color: var(--digi-text-primary);
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+}
+
+.digi-mapel-form-input:focus {
+    border-color: var(--digi-red);
+    background: white;
+    box-shadow: 0 0 0 3px rgba(192,57,43,0.1);
+}
+
+.digi-mapel-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 12px 16px 16px;
+}
+
+.digi-btn-simpan {
+    background: var(--digi-card-bg);
+    border: 0.5px solid var(--digi-border);
+    border-radius: var(--digi-radius-sm);
+    padding: 9px 20px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--digi-text-primary);
+    cursor: pointer;
+    -webkit-appearance: none;
+}
+
+.digi-btn-batal {
+    background: var(--digi-card-bg);
+    border: 0.5px solid var(--digi-border);
+    border-radius: var(--digi-radius-sm);
+    padding: 9px 20px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--digi-text-primary);
+    cursor: pointer;
+    -webkit-appearance: none;
+}
+
+/* ==================== LOGIN PAGE ==================== */
+.digi-login-page {
     min-height: 100vh;
-    background: linear-gradient(135deg, #C0392B 0%, #922B21 60%, #1a1a1a 100%);
+    background: var(--digi-bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+}
+
+.digi-login-logos {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1.5rem;
+    gap: 12px;
+    margin-bottom: 16px;
 }
 
-.digi-login-card {
-    background: white;
-    border-radius: 1.25rem;
-    width: 100%;
-    max-width: 400px;
-    overflow: hidden;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-}
-
-.digi-login-header {
-    background: linear-gradient(135deg, #C0392B, #922B21);
-    padding: 2rem;
-    text-align: center;
-    color: white;
-}
-
-.digi-login-logo {
-    display: flex;
-    justify-content: center;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
-}
-
-.digi-login-logo img {
-    width: 52px;
-    height: 52px;
+.digi-login-badge {
+    width: 72px;
+    height: 72px;
     border-radius: 50%;
-    border: 2px solid rgba(255,255,255,0.4);
+    overflow: hidden;
+    background: #e5e5ea;
+    border: 2px solid rgba(0,0,0,0.08);
 }
 
-.digi-login-body {
-    padding: 2rem;
-}
-
-.digi-input {
+.digi-login-badge img {
     width: 100%;
-    padding: 0.7rem 1rem;
-    border: 1.5px solid var(--digi-gray-200);
-    border-radius: 0.5rem;
-    font-size: 0.9rem;
-    transition: border-color 0.2s;
-    color: var(--digi-gray-800);
+    height: 100%;
+    object-fit: cover;
 }
 
-.digi-input:focus {
+.digi-login-app-name {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--digi-text-primary);
+    text-align: center;
+    margin-bottom: 4px;
+    letter-spacing: -0.3px;
+}
+
+.digi-login-tagline {
+    font-size: 13px;
+    color: var(--digi-text-secondary);
+    text-align: center;
+    margin-bottom: 32px;
+    line-height: 1.4;
+}
+
+.digi-login-form {
+    width: 100%;
+    max-width: 380px;
+}
+
+.digi-login-field {
+    background: var(--digi-card-bg);
+    border: 0.5px solid var(--digi-border);
+    border-radius: var(--digi-radius-sm);
+    margin-bottom: 8px;
+    overflow: hidden;
+}
+
+.digi-login-input {
+    width: 100%;
+    border: none;
     outline: none;
-    border-color: var(--digi-red);
-    box-shadow: 0 0 0 3px rgba(192,57,43,0.08);
+    background: transparent;
+    padding: 14px 16px;
+    font-size: 16px;
+    color: var(--digi-text-primary);
+    -webkit-appearance: none;
 }
 
-.digi-label {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--digi-gray-600);
-    display: block;
-    margin-bottom: 0.4rem;
+.digi-login-input::placeholder {
+    color: var(--digi-text-muted);
 }
 
-/* ==================== TABLE ==================== */
+.digi-login-show-pwd {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    margin-bottom: 20px;
+}
+
+.digi-login-show-pwd input[type="checkbox"] {
+    accent-color: var(--digi-red);
+    width: 14px;
+    height: 14px;
+}
+
+.digi-login-show-pwd label {
+    font-size: 13px;
+    color: var(--digi-text-secondary);
+    cursor: pointer;
+}
+
+.digi-login-btn {
+    width: 100%;
+    background: var(--digi-red);
+    color: white;
+    border: none;
+    border-radius: var(--digi-radius-sm);
+    padding: 15px;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    -webkit-appearance: none;
+    transition: background 0.15s, transform 0.1s;
+}
+
+.digi-login-btn:active {
+    background: var(--digi-red-dark);
+    transform: scale(0.98);
+}
+
+/* ==================== TABEL ==================== */
 .digi-table {
     width: 100%;
     border-collapse: collapse;
 }
 
 .digi-table th {
-    background: var(--digi-gray-50);
-    padding: 0.75rem 1rem;
     text-align: left;
-    font-size: 0.75rem;
+    padding: 10px 16px;
+    font-size: 12px;
     font-weight: 600;
-    color: var(--digi-gray-600);
-    border-bottom: 1px solid var(--digi-gray-200);
+    color: var(--digi-text-secondary);
+    background: var(--digi-bg);
+    border-bottom: 0.5px solid var(--digi-border);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.3px;
 }
 
 .digi-table td {
-    padding: 0.875rem 1rem;
-    font-size: 0.875rem;
-    color: var(--digi-gray-800);
-    border-bottom: 1px solid var(--digi-gray-100);
+    padding: 12px 16px;
+    font-size: 14px;
+    color: var(--digi-text-primary);
+    border-bottom: 0.5px solid var(--digi-border);
 }
 
-.digi-table tr:hover td {
-    background: var(--digi-gray-50);
+.digi-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* ==================== BADGE / STATUS ==================== */
+.digi-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.digi-badge-aktif {
+    background: #D4EDDA;
+    color: #155724;
+}
+
+.digi-badge-draft {
+    background: var(--digi-bg);
+    color: var(--digi-text-secondary);
+}
+
+.digi-badge-selesai {
+    background: #E2D9F3;
+    color: #4A235A;
+}
+
+/* ==================== STATS ROW ==================== */
+.digi-stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.digi-stat-card {
+    background: var(--digi-card-bg);
+    border-radius: var(--digi-radius);
+    padding: 14px 12px;
+    box-shadow: var(--digi-shadow);
+    text-align: center;
+}
+
+.digi-stat-value {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--digi-red);
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.digi-stat-label {
+    font-size: 11px;
+    color: var(--digi-text-secondary);
+    font-weight: 500;
+}
+
+/* ==================== UJIAN CARD (student dashboard) ==================== */
+.digi-exam-card {
+    background: var(--digi-card-bg);
+    border-radius: var(--digi-radius);
+    padding: 16px;
+    box-shadow: var(--digi-shadow);
+    margin-bottom: 10px;
+}
+
+.digi-exam-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--digi-text-primary);
+    margin-bottom: 4px;
+}
+
+.digi-exam-meta {
+    font-size: 13px;
+    color: var(--digi-text-secondary);
+    margin-bottom: 12px;
+}
+
+.digi-exam-btn {
+    display: block;
+    background: var(--digi-red);
+    color: white;
+    border: none;
+    border-radius: var(--digi-radius-sm);
+    padding: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    text-decoration: none;
+    -webkit-appearance: none;
+}
+
+.digi-exam-btn-outline {
+    display: block;
+    background: transparent;
+    color: var(--digi-red);
+    border: 1px solid var(--digi-red);
+    border-radius: var(--digi-radius-sm);
+    padding: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+/* ==================== TOKEN INPUT ==================== */
+.digi-token-input {
+    width: 100%;
+    text-align: center;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 0.4em;
+    padding: 16px;
+    border: 1.5px solid var(--digi-border);
+    border-radius: var(--digi-radius);
+    color: var(--digi-red);
+    text-transform: uppercase;
+    background: var(--digi-bg);
+    outline: none;
+    -webkit-appearance: none;
+}
+
+.digi-token-input:focus {
+    border-color: var(--digi-red);
+    background: white;
+    box-shadow: 0 0 0 3px rgba(192,57,43,0.12);
+}
+
+/* ==================== EXAM PAGE ==================== */
+.digi-exam-wrap {
+    background: var(--digi-bg);
+    min-height: calc(100vh - 56px);
+    padding: 12px 16px;
+}
+
+.digi-exam-timer {
+    background: var(--digi-red);
+    color: white;
+    border-radius: var(--digi-radius);
+    padding: 12px 16px;
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.digi-exam-timer-label {
+    font-size: 10px;
+    font-weight: 600;
+    opacity: 0.85;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+
+.digi-exam-timer-value {
+    font-size: 32px;
+    font-weight: 700;
+    font-family: 'SF Mono', 'Courier New', monospace;
+    letter-spacing: 2px;
+}
+
+.digi-exam-question-card {
+    background: var(--digi-card-bg);
+    border-radius: var(--digi-radius);
+    padding: 16px;
+    box-shadow: var(--digi-shadow);
+    margin-bottom: 12px;
+}
+
+.digi-exam-question-num {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--digi-red);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.digi-exam-question-text {
+    font-size: 15px;
+    color: var(--digi-text-primary);
+    line-height: 1.6;
+    font-weight: 500;
+    margin-bottom: 16px;
+}
+
+.digi-option-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    text-align: left;
+    padding: 12px 14px;
+    border: 1px solid var(--digi-border);
+    border-radius: var(--digi-radius-sm);
+    background: var(--digi-card-bg);
+    cursor: pointer;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: var(--digi-text-primary);
+    transition: background 0.1s, border-color 0.1s;
+    -webkit-appearance: none;
+}
+
+.digi-option-btn.selected {
+    border-color: var(--digi-red);
+    background: rgba(192,57,43,0.06);
+    color: var(--digi-red);
+    font-weight: 600;
+}
+
+.digi-option-circle {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1.5px solid currentColor;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+.digi-option-btn.selected .digi-option-circle {
+    background: var(--digi-red);
+    border-color: var(--digi-red);
+    color: white;
+}
+
+/* Number nav grid */
+.digi-num-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    margin: 10px 0;
+}
+
+.digi-num-btn {
+    aspect-ratio: 1;
+    border-radius: var(--digi-radius-sm);
+    border: 1px solid var(--digi-border);
+    background: var(--digi-card-bg);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--digi-text-secondary);
+    -webkit-appearance: none;
+}
+
+.digi-num-btn.answered {
+    background: #D4EDDA;
+    border-color: #28a745;
+    color: #155724;
+}
+
+.digi-num-btn.current {
+    background: var(--digi-red);
+    border-color: var(--digi-red);
+    color: white;
+}
+
+/* ==================== RESULT PAGE ==================== */
+.digi-result-hero {
+    background: var(--digi-card-bg);
+    border-radius: var(--digi-radius);
+    padding: 24px 16px;
+    box-shadow: var(--digi-shadow);
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.digi-result-score {
+    font-size: 64px;
+    font-weight: 800;
+    color: var(--digi-red);
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.digi-result-grade {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--digi-text-primary);
+    margin-bottom: 8px;
+}
+
+.digi-result-status-pass {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #D4EDDA;
+    color: #155724;
+    padding: 6px 16px;
+    border-radius: 100px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.digi-result-status-fail {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #F8D7DA;
+    color: #721C24;
+    padding: 6px 16px;
+    border-radius: 100px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* ==================== BUTTON GROUP ==================== */
+.digi-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: var(--digi-red);
+    color: white;
+    border: none;
+    border-radius: var(--digi-radius-sm);
+    padding: 11px 20px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    -webkit-appearance: none;
+    transition: background 0.1s, transform 0.1s;
+}
+
+.digi-btn-primary:active {
+    background: var(--digi-red-dark);
+    transform: scale(0.97);
+}
+
+.digi-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: var(--digi-bg);
+    color: var(--digi-text-primary);
+    border: 0.5px solid var(--digi-border);
+    border-radius: var(--digi-radius-sm);
+    padding: 11px 20px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    -webkit-appearance: none;
+}
+
+/* ==================== NAV / SIDEBAR (hidden on mobile) ==================== */
+.digi-sidebar {
+    display: none;
 }
 
 /* ==================== VIOLATION ALERT ==================== */
-.violation-alert {
+.digi-violation-alert {
     position: fixed;
-    top: 80px;
+    top: 72px;
     left: 50%;
     transform: translateX(-50%);
-    background: #C0392B;
+    background: var(--digi-red);
     color: white;
-    padding: 0.75rem 2rem;
-    border-radius: 0.75rem;
+    padding: 10px 20px;
+    border-radius: var(--digi-radius);
     font-weight: 600;
-    z-index: 1000;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    animation: slideDown 0.3s ease;
+    font-size: 14px;
+    z-index: 200;
+    box-shadow: 0 4px 16px rgba(192,57,43,0.4);
+    white-space: nowrap;
 }
 
-@keyframes slideDown {
-    from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
-    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+/* ==================== FLASH / ALERT ==================== */
+.digi-alert-success {
+    background: #D4EDDA;
+    border: 0.5px solid #C3E6CB;
+    color: #155724;
+    padding: 12px 16px;
+    border-radius: var(--digi-radius-sm);
+    font-size: 14px;
+    margin-bottom: 12px;
 }
 
-/* ==================== RESPONSIVE ==================== */
-@media (max-width: 768px) {
-    .exam-container {
-        grid-template-columns: 1fr;
+.digi-alert-error {
+    background: #F8D7DA;
+    border: 0.5px solid #F5C6CB;
+    color: #721C24;
+    padding: 12px 16px;
+    border-radius: var(--digi-radius-sm);
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+
+.digi-alert-warning {
+    background: #FFF3CD;
+    border: 0.5px solid #FFEEBA;
+    color: #856404;
+    padding: 12px 16px;
+    border-radius: var(--digi-radius-sm);
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+
+/* ==================== EMPTY STATE ==================== */
+.digi-empty {
+    padding: 48px 24px;
+    text-align: center;
+    color: var(--digi-text-muted);
+}
+
+.digi-empty-icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+}
+
+.digi-empty-text {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--digi-text-secondary);
+}
+
+/* ==================== PROGRESS BAR ==================== */
+.digi-progress-wrap {
+    background: var(--digi-bg);
+    border-radius: 100px;
+    height: 6px;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+
+.digi-progress-bar {
+    height: 100%;
+    background: var(--digi-red);
+    border-radius: 100px;
+    transition: width 0.3s;
+}
+
+.digi-progress-bar.green {
+    background: var(--digi-green);
+}
+
+/* ==================== DIVIDER ==================== */
+.digi-divider {
+    height: 0.5px;
+    background: var(--digi-border);
+    margin: 0;
+}
+
+/* ==================== LOADING ==================== */
+[wire\:loading] {
+    opacity: 0.6;
+}
+
+/* ==================== DESKTOP FALLBACK (tablet ke atas) ==================== */
+@media (min-width: 768px) {
+    .digi-page {
+        max-width: 480px;
+        margin: 0 auto;
+        padding: 20px 16px;
     }
-    .exam-sidebar-panel {
-        position: static;
-        order: -1;
+
+    .digi-login-page {
+        background: var(--digi-bg);
+    }
+
+    .digi-login-form {
+        max-width: 400px;
+    }
+
+    .digi-sidebar {
+        display: none;
+    }
+}
+
+/* ==================== PRINT ==================== */
+@media print {
+    .digi-header, .digi-sidebar, .digi-btn-primary, .digi-btn-secondary {
+        display: none !important;
+    }
+    body {
+        background: white;
     }
 }
