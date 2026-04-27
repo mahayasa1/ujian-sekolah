@@ -32,8 +32,8 @@
 
     {{-- Dua badge logo --}}
     <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:20px;">
-        <div style="width:72px;height:72px;border-radius:50%;overflow:hidden;background:#e5e5ea;display:flex;align-items:center;justify-content:center;font-size:36px;">🏫</div>
-        <div style="width:72px;height:72px;border-radius:50%;overflow:hidden;background:#e5e5ea;display:flex;align-items:center;justify-content:center;font-size:36px;">⭐</div>
+        <img src="/images/logo_2.png" style="width:72px;height:72px;">
+        <img src="/images/logo_1.png"  style="width:72px;height:72px;">
     </div>
 
     {{-- App name --}}
