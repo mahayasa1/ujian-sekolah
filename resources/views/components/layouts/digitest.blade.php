@@ -47,10 +47,10 @@
                 src="/images/logo_2.png"
                 alt="Logo Kabupaten Tabanan"
                 style="
-                    width: 72px;
-                    height: 72px;
+                    width: 66px;
+                    height: 66px;
                     object-fit: contain;
-                    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+                    margin-bottom: 1px;
                 "
             >
         </div>
@@ -81,11 +81,9 @@
                 src="/images/logo_1.png"
                 alt="Logo SMP Negeri 1 Selemadeg"
                 style="
-                    width: 50px;
-                    height: 50px;
-                    border-radius: 50%;
+                    width: 72px;
+                    height: 72px;
                     object-fit: cover;
-                    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
                 "
             >
         </div>

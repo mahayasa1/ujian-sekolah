@@ -33,7 +33,7 @@
 </div>
 
 {{-- Label Mata Pelajaran --}}
-<div style="font-size:17px;font-weight:600;color:#1C1C1E;margin-bottom:12px;">Mata Pelajaran</div>
+<div style="font-size:17px;font-weight:600;color:#1C1C1E;margin-bottom:12px;">Ujian Tersedia</div>
 
 {{-- Grid 3 kolom kartu ujian --}}
 @if($exams->isEmpty())
@@ -58,7 +58,8 @@
             <div style="position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:#34C759;"></div>
             <div style="font-size:28px;line-height:1;">{{ $icon }}</div>
             <div style="font-size:11px;font-weight:600;color:#1C1C1E;line-height:1.2;">{{ Str::limit($exam->subject->name, 10) }}</div>
-            <div style="font-size:10px;color:#34C759;font-weight:700;">{{ $session->score }}</div>
+            <div style="font-size:9px;color:#8E8E93;line-height:1.2;text-align:center;">{{ Str::limit($exam->title, 12) }}</div>
+            <div style="font-size:10px;color:#34C759;font-weight:700;">{{ $session->score ?? '-' }}</div>
         </a>
 
     @elseif($isOngoing)
@@ -68,6 +69,7 @@
             <div style="position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:#FF9500;"></div>
             <div style="font-size:28px;line-height:1;">{{ $icon }}</div>
             <div style="font-size:11px;font-weight:600;color:#1C1C1E;line-height:1.2;">{{ Str::limit($exam->subject->name, 10) }}</div>
+            <div style="font-size:9px;color:#8E8E93;line-height:1.2;text-align:center;">{{ Str::limit($exam->title, 12) }}</div>
             <div style="font-size:10px;color:#FF9500;font-weight:600;">Lanjutkan</div>
         </a>
 
@@ -77,14 +79,15 @@
             style="background:white;border-radius:12px;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.08);cursor:pointer;padding:12px 8px;text-align:center;border:none;gap:6px;width:100%;">
             <div style="font-size:28px;line-height:1;">{{ $icon }}</div>
             <div style="font-size:11px;font-weight:600;color:#1C1C1E;line-height:1.2;">{{ Str::limit($exam->subject->name, 10) }}</div>
+            <div style="font-size:9px;color:#8E8E93;line-height:1.2;text-align:center;">{{ Str::limit($exam->title, 12) }}</div>
             <div style="font-size:10px;color:#C0392B;font-weight:600;">Mulai</div>
         </button>
     @endif
 
     @endforeach
 
-    {{-- Isi sisa grid (min 9 kotak) --}}
-    @for($i = $exams->count(); $i < 9; $i++)
+    {{-- Isi sisa grid minimal 9 kotak --}}
+    @for($i = $exams->count(); $i < max(9, $exams->count()); $i++)
     <div style="background:white;border-radius:12px;aspect-ratio:1;box-shadow:0 1px 3px rgba(0,0,0,0.08);opacity:0.4;"></div>
     @endfor
 </div>
@@ -99,10 +102,10 @@
         <a href="{{ route('student.result', $ses->id) }}"
            style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:0.5px solid #E5E5EA;text-decoration:none;color:inherit;">
             <div style="flex:1;min-width:0;">
-                <div style="font-size:14px;font-weight:600;color:#1C1C1E;margin-bottom:2px;">{{ $ses->exam->subject->name }}</div>
-                <div style="font-size:12px;color:#8E8E93;">{{ $ses->submitted_at?->format('d M Y') }}</div>
+                <div style="font-size:14px;font-weight:600;color:#1C1C1E;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $ses->exam->title }}</div>
+                <div style="font-size:12px;color:#8E8E93;">{{ $ses->exam->subject->name }} · {{ $ses->submitted_at?->format('d M Y') }}</div>
             </div>
-            <div style="font-size:20px;font-weight:700;color:{{ ($ses->score ?? 0) >= 75 ? '#34C759' : '#C0392B' }};margin-left:12px;">
+            <div style="font-size:20px;font-weight:700;color:{{ ($ses->score ?? 0) >= 75 ? '#34C759' : '#C0392B' }};margin-left:12px;flex-shrink:0;">
                 {{ $ses->score ?? '-' }}
             </div>
         </a>
@@ -113,7 +116,6 @@
 
 {{-- ============================================================
      POPUP TOKEN UJIAN
-     Muncul saat siswa klik kartu mapel yang belum dikerjakan
      ============================================================ --}}
 @if($selectedExamId && $selectedExam)
 <div
@@ -125,7 +127,7 @@
         {{-- Header popup --}}
         <div style="background:linear-gradient(135deg,#C0392B,#922B21);padding:20px 16px;text-align:center;position:relative;">
             <button wire:click="closePopup"
-                style="position:absolute;top:12px;right:14px;background:rgba(255,255,255,0.2);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;">
+                style="position:absolute;top:12px;right:14px;background:rgba(255,255,255,0.2);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;font-family:inherit;">
                 ✕
             </button>
             <div style="font-size:36px;margin-bottom:8px;">
@@ -179,7 +181,7 @@
 
             {{-- Peringatan keamanan --}}
             <div style="background:#FFFBEB;border:0.5px solid #FCD34D;border-radius:8px;padding:10px 12px;margin-top:12px;font-size:12px;color:#78350F;line-height:1.6;">
-                <strong>⚠️ Perhatian:</strong> Setelah ujian dimulai, jangan berpindah tab. Berpindah tab akan menghentikan ujian secara otomatis dan kamu akan dikembalikan ke halaman ini.
+                <strong>⚠️ Perhatian:</strong> Setelah ujian dimulai, jangan berpindah tab. Berpindah tab akan menghentikan ujian secara otomatis.
             </div>
         </div>
 

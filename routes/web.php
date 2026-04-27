@@ -25,7 +25,6 @@ Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->gr
 
     Route::get('/dashboard', \App\Livewire\Student\Dashboard::class)->name('dashboard');
 
-    // Halaman ujian (token diinput via popup di dashboard)
     Route::get('/exam/{session}', \App\Livewire\Student\ExamPage::class)->name('exam');
 
     Route::get('/result/{session}', \App\Livewire\Student\Result::class)->name('result');
@@ -58,8 +57,6 @@ Route::middleware(['auth', 'verified'])->prefix('teacher')->name('teacher.')->gr
     })->name('subject');
 
     Route::get('/monitor/{exam}', \App\Livewire\Teacher\ExamMonitor::class)->name('monitor');
-
-    // Route::get('/exam/{exam}/results', \App\Livewire\Teacher\ExamResults::class)->name('exam-results');
 });
 
 // ============================================================
@@ -73,13 +70,19 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
 
     // Data Guru — tampil list user role guru
     Route::get('/data-guru', function () {
-        $teachers = \App\Models\User::where('role', 'guru')
-            ->with('teacher')
-            ->latest()
-            ->get();
+        $teachers = \App\Models\Teacher::with('user')->latest()->get();
         return view('livewire.admin.data_guru', compact('teachers'))
             ->layout('components.layouts.digitest', ['title' => 'Data Guru']);
     })->name('data_guru');
+
+    // Data Siswa — tampil list siswa saja tanpa pilihan role
+    Route::get('/data-siswa', function () {
+        $students = \App\Models\Student::with(['user', 'classRoom'])
+            ->latest()
+            ->paginate(20);
+        return view('livewire.admin.data_siswa', compact('students'))
+            ->layout('components.layouts.digitest', ['title' => 'Data Siswa']);
+    })->name('data_siswa');
 });
 
 require __DIR__.'/settings.php';

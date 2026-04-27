@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Livewire\Student;
 
 use App\Models\Exam;
@@ -7,7 +8,6 @@ use Livewire\Component;
 
 class Dashboard extends Component
 {
-    // ID ujian yang dipilih (untuk popup token)
     public ?int $selectedExamId = null;
     public string $tokenInput   = '';
     public string $tokenError   = '';
@@ -36,7 +36,7 @@ class Dashboard extends Component
             return;
         }
 
-        if (strtoupper($this->tokenInput) !== strtoupper($exam->token)) {
+        if (strtoupper(trim($this->tokenInput)) !== strtoupper($exam->token)) {
             $this->tokenError = 'Token tidak valid. Periksa kembali token dari guru Anda.';
             return;
         }
@@ -47,6 +47,11 @@ class Dashboard extends Component
         }
 
         $student  = auth()->user()->student;
+        if (!$student) {
+            $this->tokenError = 'Data siswa tidak ditemukan. Hubungi admin.';
+            return;
+        }
+
         $existing = ExamSession::where('exam_id', $exam->id)
             ->where('student_id', $student->id)->first();
 
@@ -64,7 +69,6 @@ class Dashboard extends Component
             ]);
         }
 
-        // Redirect ke halaman ujian (security aktif di sana)
         return $this->redirect(route('student.exam', $existing->id), navigate: true);
     }
 
@@ -73,9 +77,14 @@ class Dashboard extends Component
         $student     = auth()->user()->student;
         $classRoomId = $student?->class_room_id;
 
-        $exams = Exam::with(['subject', 'subject.teacher.user'])
-            ->where('class_room_id', $classRoomId)
+        // Ambil semua ujian aktif yang ditujukan untuk kelas siswa
+        // Termasuk ujian tanpa kelas tertentu (berlaku untuk semua kelas)
+        $exams = Exam::with(['subject', 'subject.teacher.user', 'classRoom'])
             ->where('status', 'aktif')
+            ->where(function ($q) use ($classRoomId) {
+                $q->where('class_room_id', $classRoomId)
+                  ->orWhereNull('class_room_id');
+            })
             ->get()
             ->map(function ($exam) use ($student) {
                 $session = $student
@@ -94,7 +103,7 @@ class Dashboard extends Component
             : collect();
 
         $selectedExam = $this->selectedExamId
-            ? Exam::find($this->selectedExamId)
+            ? Exam::with(['subject', 'classRoom'])->find($this->selectedExamId)
             : null;
 
         return view('livewire.student.dashboard',

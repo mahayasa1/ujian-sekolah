@@ -13,19 +13,18 @@ class QuestionBank extends Component
 
     public int $subjectId;
 
-    // Form state
     public bool $showForm    = false;
     public ?int $editId      = null;
     public bool $showPreview = false;
     public ?int $previewId   = null;
 
-    // Form fields
     public string $title              = '';
     public string $googleFormUrl      = '';
     public string $googleFormEditUrl  = '';
     public string $googleSheetUrl     = '';
     public string $description        = '';
     public int    $duration           = 60;
+    public string $examDate           = '';
     public bool   $isActive           = true;
 
     public function mount(int $subjectId): void
@@ -49,6 +48,7 @@ class QuestionBank extends Component
             'googleSheetUrl'    => 'nullable|url|max:1000',
             'description'       => 'nullable|string|max:1000',
             'duration'          => 'required|integer|min:5|max:300',
+            'examDate'          => 'nullable|date',
         ]);
 
         Question::updateOrCreate(
@@ -61,6 +61,7 @@ class QuestionBank extends Component
                 'google_sheet_url'     => $this->googleSheetUrl ?: null,
                 'description'          => $this->description ?: null,
                 'duration'             => $this->duration,
+                'exam_date'            => $this->examDate ?: null,
                 'is_active'            => $this->isActive,
                 'created_by'           => $this->editId ? Question::find($this->editId)?->created_by : auth()->id(),
             ]
@@ -80,6 +81,7 @@ class QuestionBank extends Component
         $this->googleSheetUrl     = $q->google_sheet_url ?? '';
         $this->description        = $q->description ?? '';
         $this->duration           = $q->duration;
+        $this->examDate           = $q->exam_date?->format('Y-m-d') ?? '';
         $this->isActive           = $q->is_active;
         $this->showForm           = true;
     }
@@ -115,7 +117,7 @@ class QuestionBank extends Component
     {
         $this->reset([
             'showForm', 'editId', 'title', 'googleFormUrl',
-            'googleFormEditUrl', 'googleSheetUrl', 'description',
+            'googleFormEditUrl', 'googleSheetUrl', 'description', 'examDate',
         ]);
         $this->duration = 60;
         $this->isActive = true;

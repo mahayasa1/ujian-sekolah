@@ -14,12 +14,14 @@ class Question extends Model
         'google_sheet_url',
         'description',
         'duration',
+        'exam_date',
         'is_active',
         'created_by',
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
+        'is_active'  => 'boolean',
+        'exam_date'  => 'date',
     ];
 
     public function subject()
@@ -32,18 +34,12 @@ class Question extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    /**
-     * Konversi URL Google Form biasa menjadi URL embed (viewform → viewform?embedded=true)
-     */
     public function getEmbedUrlAttribute(): string
     {
         $url = $this->google_form_url;
-
-        // Pastikan URL pakai ?embedded=true
         if (!str_contains($url, 'embedded=true')) {
             $url .= (str_contains($url, '?') ? '&' : '?') . 'embedded=true';
         }
-
         return $url;
     }
 }

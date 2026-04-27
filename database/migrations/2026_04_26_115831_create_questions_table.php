@@ -16,6 +16,7 @@ return new class extends Migration {
             $table->string('google_sheet_url')->nullable(); // Link spreadsheet hasil
             $table->text('description')->nullable();        // Deskripsi / petunjuk soal
             $table->integer('duration')->default(60);       // Durasi default (menit)
+            $table->date('exam_date')->nullable();          // Tanggal ujian (opsional)
             $table->boolean('is_active')->default(true);
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
