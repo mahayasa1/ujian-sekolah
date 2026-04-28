@@ -1,5 +1,5 @@
 {{-- resources/views/livewire/student/exam-page.blade.php --}}
-{{-- FIXED: Mobile responsive + Violation overlay 5 detik --}}
+{{-- UPDATED: No sidebar layout, timer stops on violation, blur grace period with warning --}}
 <div
     x-data="examSecurity(@js($session->id), @js($session->exam->google_form_url ? true : false))"
     x-init="init()"
@@ -7,7 +7,59 @@
 >
 
 {{-- ============================================================
-     VIOLATION OVERLAY — Fullscreen, 5 detik countdown
+     BLUR WARNING OVERLAY — Muncul saat blur, countdown 8 detik
+     ============================================================ --}}
+<div
+    x-show="showBlurWarning"
+    x-cloak
+    style="position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9998;display:flex;align-items:center;justify-content:center;padding:24px;"
+>
+    <div style="background:white;border-radius:20px;max-width:360px;width:100%;overflow:hidden;box-shadow:0 25px 80px rgba(0,0,0,0.5);text-align:center;">
+
+        {{-- Yellow warning top bar --}}
+        <div style="background:linear-gradient(135deg,#F39C12,#D68910);padding:24px 24px 18px;">
+            <div style="font-size:48px;margin-bottom:8px;">⚠️</div>
+            <div style="font-size:18px;font-weight:800;color:white;line-height:1.3;">Peringatan!</div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.85);margin-top:4px;">Kamu keluar dari jendela ujian</div>
+        </div>
+
+        <div style="padding:20px 24px;">
+            <p style="font-size:14px;color:#374151;line-height:1.7;margin:0 0 16px;">
+                Segera kembali ke halaman ujian!<br>
+                Jika tidak, ujian akan <strong style="color:#C0392B;">dikunci otomatis</strong> dalam:
+            </p>
+
+            {{-- Countdown circle --}}
+            <div style="display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+                <div style="
+                    width:90px;height:90px;border-radius:50%;
+                    background:linear-gradient(135deg,#FEF9C3,#FEF08A);
+                    border:4px solid #F39C12;
+                    display:flex;flex-direction:column;align-items:center;justify-content:center;
+                    box-shadow:0 0 0 4px rgba(243,156,18,0.2);
+                ">
+                    <div x-text="blurCountdown" style="font-size:36px;font-weight:800;color:#92400E;line-height:1;"></div>
+                    <div style="font-size:9px;color:#92400E;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">detik</div>
+                </div>
+            </div>
+
+            <div style="background:#FFFBEB;border:1px solid #FCD34D;border-radius:10px;padding:10px 14px;font-size:12px;color:#78350F;line-height:1.6;text-align:left;">
+                🔒 Setelah dikunci, kamu perlu <strong>token re-entry</strong> dari guru untuk melanjutkan ujian.
+            </div>
+
+            {{-- Button kembali --}}
+            <button
+                @click="cancelBlurViolation()"
+                style="margin-top:14px;width:100%;padding:13px;background:#27AE60;border:none;border-radius:10px;font-size:14px;font-weight:700;color:white;cursor:pointer;font-family:inherit;"
+            >
+                ✅ Saya Sudah Kembali
+            </button>
+        </div>
+    </div>
+</div>
+
+{{-- ============================================================
+     VIOLATION OVERLAY — Fullscreen, 5 detik countdown (tab switch)
      ============================================================ --}}
 <div
     x-show="showViolationOverlay"
@@ -16,20 +68,17 @@
 >
     <div style="background:white;border-radius:20px;max-width:380px;width:100%;overflow:hidden;box-shadow:0 25px 80px rgba(0,0,0,0.5);text-align:center;">
 
-        {{-- Red top bar --}}
         <div style="background:linear-gradient(135deg,#C0392B,#7B241C);padding:28px 24px 20px;">
             <div style="font-size:48px;margin-bottom:8px;">🚫</div>
             <div style="font-size:18px;font-weight:800;color:white;line-height:1.3;">Pelanggaran Terdeteksi!</div>
         </div>
 
-        {{-- Body --}}
         <div style="padding:24px;">
             <p style="font-size:14px;color:#374151;line-height:1.7;margin:0 0 20px;">
-                Kamu keluar dari halaman ujian.<br>
+                Kamu berpindah tab/jendela saat ujian.<br>
                 Ujian dikunci otomatis. Minta <strong style="color:#C0392B;">token re-entry</strong> dari guru pengawas untuk melanjutkan.
             </p>
 
-            {{-- Countdown circle --}}
             <div style="display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
                 <div style="
                     width:80px;height:80px;border-radius:50%;
@@ -45,14 +94,14 @@
 
             <div style="background:#FFF3CD;border:1px solid #FFC107;border-radius:10px;padding:12px 16px;font-size:12px;color:#856404;line-height:1.6;">
                 ⏰ Mengalihkan ke dashboard dalam <strong x-text="redirectCountdown"></strong> detik...<br>
-                <span style="font-size:11px;opacity:0.8;">Sisa waktu ujian terus berjalan di server</span>
+                <span style="font-size:11px;opacity:0.8;">⏱ Waktu ujian <strong>berhenti</strong> saat ini dan akan lanjut dari sini saat re-entry</span>
             </div>
         </div>
     </div>
 </div>
 
 {{-- ============================================================
-     HEADER UJIAN
+     HEADER UJIAN (standalone, tanpa sidebar)
      ============================================================ --}}
 <header style="
     background:linear-gradient(135deg,#C0392B,#922B21);
@@ -76,7 +125,7 @@
 
     @if($violationCount > 0)
     <div style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);padding:3px 8px;border-radius:6px;color:white;font-size:11px;font-weight:600;flex-shrink:0;">
-        ⚠️ {{ $violationCount }}/3
+        ⚠️ {{ $violationCount }}
     </div>
     @endif
 
@@ -84,7 +133,7 @@
 </header>
 
 {{-- ============================================================
-     TIMER BAR (full width, sticky di mobile)
+     TIMER BAR
      ============================================================ --}}
 <div id="exam-timer" style="
     background:linear-gradient(135deg,#C0392B,#922B21);
@@ -105,7 +154,6 @@
      ============================================================ --}}
 <div style="max-width:800px;margin:0 auto;padding:12px;">
 
-    {{-- Progress bar (mobile) --}}
     @if(!$session->exam->google_form_url)
     @php $totalQ = $this->questions->count(); @endphp
     <div style="background:white;border-radius:10px;padding:10px 14px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:10px;display:flex;align-items:center;gap:10px;">
@@ -163,10 +211,7 @@
     </div>
     @else
 
-    {{-- Question card --}}
     <div style="background:white;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:10px;" wire:poll.30000ms="autoSave">
-
-        {{-- Question header --}}
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
             <div style="font-size:12px;font-weight:700;color:#C0392B;text-transform:uppercase;letter-spacing:0.5px;">
                 Soal {{ $currentIndex + 1 }} / {{ $total }}
@@ -176,24 +221,20 @@
             </span>
         </div>
 
-        {{-- Progress dots --}}
         <div style="height:3px;background:#F3F4F6;border-radius:2px;margin-bottom:16px;overflow:hidden;">
             <div style="height:100%;background:linear-gradient(90deg,#C0392B,#F39C12);border-radius:2px;width:{{ (($currentIndex+1)/$total)*100 }}%;transition:width 0.3s;"></div>
         </div>
 
-        {{-- Question image (if any) --}}
         @if(isset($question->image) && $question->image)
         <div style="margin-bottom:14px;">
             <img src="{{ asset('storage/'.$question->image) }}" alt="Gambar soal" style="max-width:100%;border-radius:8px;border:1px solid #E5E7EB;">
         </div>
         @endif
 
-        {{-- Question text --}}
         <div style="font-size:15px;line-height:1.75;color:#1F2937;margin-bottom:18px;font-weight:500;">
             {{ $question->question }}
         </div>
 
-        {{-- Options --}}
         @if($question->type === 'pg')
         <div>
             @foreach(['A','B','C','D','E'] as $opt)
@@ -248,7 +289,6 @@
         </div>
         @endif
 
-        {{-- Navigation buttons --}}
         <div style="display:flex;justify-content:space-between;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid #F3F4F6;">
             <button
                 wire:click="goTo({{ max(0, $currentIndex - 1) }})"
@@ -310,7 +350,7 @@
     @endif
     @endif
 
-    {{-- Submit button (always visible) --}}
+    {{-- Submit button --}}
     <div style="background:white;border-radius:12px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:10px;">
         <button
             wire:click="confirmSubmit"
@@ -319,7 +359,7 @@
         </button>
         @if($violationCount > 0)
         <div style="margin-top:10px;background:#FDEDEC;border:1px solid #F1948A;border-radius:8px;padding:8px 12px;font-size:12px;color:#C0392B;font-weight:600;text-align:center;">
-            ⚠️ Pelanggaran: {{ $violationCount }}/3 — Hati-hati, jangan berpindah tab!
+            ⚠️ Pelanggaran: {{ $violationCount }} — Hati-hati, jangan berpindah tab!
         </div>
         @endif
         <div style="margin-top:8px;background:#FFFBEB;border:1px solid #FCD34D;border-radius:8px;padding:8px 12px;font-size:11px;color:#78350F;line-height:1.6;text-align:center;">
@@ -425,8 +465,16 @@ function examSecurity(sessionId, isGoogleForm) {
     return {
         showViolationOverlay: false,
         redirectCountdown: 5,
+        showBlurWarning: false,
+        blurCountdown: 8,
+
         _submitted: false,
         _violationReported: false,
+        _blurInterval: null,
+        _focusRestored: false,
+        // Flag: ada pelanggaran yang perlu ditampilkan saat tab kembali
+        _pendingViolation: false,
+        _pendingType: '',
 
         init() {
             // Block right click & shortcuts
@@ -438,48 +486,120 @@ function examSecurity(sessionId, isGoogleForm) {
                 if (e.key === 'PrintScreen' || e.key === 'F12') e.preventDefault();
             });
 
-            // Tab switch detection
+            // ============================================================
+            // visibilitychange — deteksi pindah tab
+            // Logika kunci:
+            //   hidden  → catat pelanggaran di server (snapshot waktu), set flag pending
+            //   visible → tampilkan popup baru (siswa sudah balik ke tab ini)
+            // ============================================================
             document.addEventListener('visibilitychange', () => {
-                if (document.hidden && !this._violationReported && !this._submitted) {
-                    this.handleViolation('tab_switch');
+
+                if (document.hidden) {
+                    // Tab disembunyikan — catat pelanggaran tapi jangan tampilkan
+                    // overlay di sini karena tab tersembunyi = tidak bisa dilihat
+                    if (!this._violationReported && !this._submitted) {
+                        this._violationReported = true;
+                        this._pendingViolation  = true;
+                        this._pendingType       = 'tab_switch';
+
+                        // Catat ke server & snapshot waktu sekarang
+                        this._callLivewireViolation('tab_switch');
+                    }
+                } else {
+                    // Tab kembali visible — sekarang baru tampilkan popup
+                    if (this._pendingViolation) {
+                        this._pendingViolation = false;
+                        this._showViolationAndRedirect();
+                    }
                 }
             });
 
-            // Window blur (switching apps)
-            window.addEventListener('blur', () => {
-                if (!this._violationReported && !this._submitted) {
-                    this.handleViolation('window_blur');
-                }
-            });
+            // ============================================================
+            // window.blur — pindah aplikasi (bukan pindah tab)
+            // Tampilkan warning dengan grace period 8 detik
+            // ============================================================
+            // window.addEventListener('blur', () => {
+            //     if (document.hidden) return;      // sudah ditangani visibilitychange
+            //     if (this._violationReported || this._submitted) return;
+            //     if (this.showBlurWarning || this.showViolationOverlay) return;
+
+            //     this._startBlurWarning();
+            // });
+
+            // window.addEventListener('focus', () => {
+            //     if (this.showBlurWarning && !this._violationReported) {
+            //         this._cancelBlurViolation();
+            //     }
+            // });
         },
 
-        handleViolation(type) {
-            if (this._violationReported || this._submitted) return;
-            this._violationReported = true;
-
-            // Show overlay immediately
-            this.showViolationOverlay = true;
-
-            // Call Livewire to record violation & lock session
+        // ============================================================
+        // Panggil Livewire untuk catat pelanggaran & lock session di server
+        // ============================================================
+        _callLivewireViolation(type) {
             var wireEl = document.querySelector('[wire\\:id]');
             if (wireEl && typeof Livewire !== 'undefined') {
                 Livewire.find(wireEl.getAttribute('wire:id'))
                     ?.call('reportViolationAndLock', type)
                     .catch(() => {});
             }
+        },
 
-            // Countdown 5 seconds then redirect
-            var secs = 5;
-            this.redirectCountdown = secs;
+        // ============================================================
+        // Tampilkan popup violation + countdown redirect 5 detik
+        // Dipanggil saat tab kembali visible ATAU saat blur timeout
+        // ============================================================
+        _showViolationAndRedirect() {
+            this.showViolationOverlay = true;
+            this.redirectCountdown    = 5;
+
             var self = this;
             var interval = setInterval(function() {
-                secs--;
-                self.redirectCountdown = secs;
-                if (secs <= 0) {
+                self.redirectCountdown--;
+                if (self.redirectCountdown <= 0) {
                     clearInterval(interval);
                     window.location.href = '/student/dashboard';
                 }
             }, 1000);
+        },
+
+        // ============================================================
+        // Blur warning — grace period 8 detik
+        // ============================================================
+        _startBlurWarning() {
+            this.showBlurWarning = true;
+            this.blurCountdown   = 8;
+            this._focusRestored  = false;
+
+            this._blurInterval = setInterval(() => {
+                this.blurCountdown--;
+                if (this.blurCountdown <= 0) {
+                    clearInterval(this._blurInterval);
+                    this._blurInterval = null;
+
+                    if (!this._focusRestored && !this._violationReported && !this._submitted) {
+                        // Grace period habis tanpa kembali → proses sebagai pelanggaran
+                        this.showBlurWarning    = false;
+                        this._violationReported = true;
+                        this._callLivewireViolation('window_blur');
+                        this._showViolationAndRedirect();
+                    }
+                }
+            }, 1000);
+        },
+
+        _cancelBlurViolation() {
+            this._focusRestored = true;
+            this.showBlurWarning = false;
+            if (this._blurInterval) {
+                clearInterval(this._blurInterval);
+                this._blurInterval = null;
+            }
+        },
+
+        // Tombol "Saya Sudah Kembali" di blur warning
+        cancelBlurViolation() {
+            this._cancelBlurViolation();
         }
     };
 }
@@ -495,7 +615,6 @@ function examSecurity(sessionId, isGoogleForm) {
 
 [x-cloak] { display: none !important; }
 
-/* Button classes */
 .btn-digi-success {
     display: inline-flex; align-items: center; gap: 6px;
     background: #27AE60; color: white; border: none;
@@ -504,16 +623,6 @@ function examSecurity(sessionId, isGoogleForm) {
     font-family: inherit; -webkit-appearance: none;
 }
 .btn-digi-success:disabled { opacity: 0.6; cursor: not-allowed; }
-
-/* Mobile responsive breakpoints */
-@media (min-width: 640px) {
-    /* On tablet/desktop, show two-column layout */
-    .exam-two-col {
-        display: grid;
-        grid-template-columns: 1fr 280px;
-        gap: 16px;
-    }
-}
 </style>
 
 </div>

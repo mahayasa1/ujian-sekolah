@@ -27,9 +27,7 @@ class ExamPage extends Component
             return $this->redirect(route('student.result', $session->id), navigate: true);
         }
 
-        // Jika ada reentry_token (artinya siswa sedang di-lock), redirect ke dashboard
-        // Ini tidak akan terjadi dalam flow normal karena reentry_token di-clear sebelum masuk
-        // Tapi sebagai double-check
+        // Jika ada reentry_token (siswa sedang di-lock), redirect ke dashboard
         if ($session->reentry_token) {
             return $this->redirect(route('student.dashboard'), navigate: true);
         }
@@ -69,7 +67,11 @@ class ExamPage extends Component
 
     /**
      * Dipanggil dari JS saat deteksi pindah tab / blur window.
-     * Catat violation, snapshot waktu, generate reentry token, redirect ke dashboard.
+     * Catat violation, SNAPSHOT waktu (timer berhenti di titik ini),
+     * generate reentry token, redirect ke dashboard.
+     *
+     * Saat siswa re-entry dengan token yang valid, getTimeLeftSeconds()
+     * akan menghitung dari remaining_seconds yang di-snapshot ini.
      */
     public function reportViolationAndLock(string $type)
     {
@@ -82,21 +84,19 @@ class ExamPage extends Component
 
         $this->violationCount++;
 
-        // Snapshot sisa waktu agar timer server akurat saat reentry
+        // PENTING: Snapshot sisa waktu → timer berhenti di detik ini
+        // Saat re-entry, getTimeLeftSeconds() pakai remaining_seconds ini sebagai basis
         $this->session->snapshotRemainingTime();
 
-        // Generate reentry token unik per session
-        $reentryToken = $this->session->generateReentryToken();
+        // Generate reentry token
+        $this->session->generateReentryToken();
 
-        // Kirim event ke guru (bisa diperluas ke broadcast)
-        // Untuk sekarang cukup catat di DB
-
-        // Redirect ke dashboard — siswa harus input reentry token untuk kembali
+        // Redirect ke dashboard
         $this->redirect(route('student.dashboard'), navigate: true);
     }
 
     /**
-     * Tetap ada untuk backward compat dari JS lama, delegate ke reportViolationAndLock
+     * Backward compat
      */
     public function reportViolation(string $type)
     {
@@ -115,27 +115,12 @@ class ExamPage extends Component
         }
 
         $this->session->update([
-            'status'       => 'selesai',
-            'submitted_at' => now(),
-            'reentry_token'=> null,
+            'status'        => 'selesai',
+            'submitted_at'  => now(),
+            'reentry_token' => null,
         ]);
 
         return $this->redirect(route('student.result', $this->session->id), navigate: true);
-    }
-
-    private function forceSubmit()
-    {
-        if (!$this->session->exam->google_form_url) {
-            $this->autoScore();
-        }
-
-        $this->session->update([
-            'status'       => 'selesai',
-            'submitted_at' => now(),
-            'reentry_token'=> null,
-        ]);
-
-        $this->redirect(route('student.dashboard'), navigate: true);
     }
 
     private function autoScore()
@@ -163,11 +148,12 @@ class ExamPage extends Component
 
     public function autoSave()
     {
-        // Triggered by wire:poll setiap 30 detik — bisa diisi logika ping ke server
+        // Triggered by wire:poll setiap 30 detik
     }
 
     public function render()
     {
-        return view('livewire.student.exam-page');
+        return view('livewire.student.exam-page')
+            ->layout('components.layouts.exam', ['title' => $this->session->exam->title]);
     }
 }

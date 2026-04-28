@@ -8,18 +8,17 @@ use Livewire\Component;
 
 class Dashboard extends Component
 {
-    public ?int $selectedExamId      = null;
-    public ?int $selectedSessionId   = null; // untuk reentry: session yang mau dilanjutkan
-    public string $tokenInput        = '';
-    public string $tokenError        = '';
-    public bool $isReentry           = false; // apakah popup untuk reentry (bukan mulai baru)
+    public ?int $selectedExamId    = null;
+    public ?int $selectedSessionId = null;
+    public string $tokenInput      = '';
+    public string $tokenError      = '';
+    public bool $isReentry         = false;
 
     public function selectExam(int $examId): void
     {
         $this->reset(['tokenInput', 'tokenError', 'selectedSessionId', 'isReentry']);
         $this->selectedExamId = $examId;
 
-        // Cek apakah ada sesi aktif yang perlu reentry
         $student  = auth()->user()->student;
         $existing = ExamSession::where('exam_id', $examId)
             ->where('student_id', $student?->id)
@@ -28,7 +27,7 @@ class Dashboard extends Component
 
         if ($existing) {
             $this->selectedSessionId = $existing->id;
-            $this->isReentry = true;
+            $this->isReentry         = true;
         }
     }
 
@@ -48,7 +47,7 @@ class Dashboard extends Component
         }
 
         // ========================
-        // MODE REENTRY (session sudah ada, status aktif)
+        // MODE REENTRY
         // ========================
         if ($this->isReentry && $this->selectedSessionId) {
             $session = ExamSession::with('exam')->find($this->selectedSessionId);
@@ -58,28 +57,35 @@ class Dashboard extends Component
                 return;
             }
 
-            // Validasi reentry token (case-insensitive)
-            if (!$session->reentry_token || strtoupper(trim($this->tokenInput)) !== strtoupper($session->reentry_token)) {
-                $this->tokenError = 'Token re-entry tidak valid. Periksa kembali token yang diberikan guru.';
+            if (!$session->reentry_token ||
+                strtoupper(trim($this->tokenInput)) !== strtoupper($session->reentry_token)) {
+                $this->tokenError = 'Token re-entry tidak valid. Periksa kembali token dari guru.';
                 return;
             }
 
-            // Cek apakah waktu masih ada
+            // Cek waktu masih ada
             if ($session->getTimeLeftSeconds() <= 0) {
-                // Waktu habis, otomatis selesaikan
                 $session->update(['status' => 'selesai', 'submitted_at' => now()]);
                 $this->tokenError = 'Waktu ujian sudah habis. Ujian otomatis dikumpulkan.';
                 return;
             }
 
-            // Berhasil reentry — clear reentry token, update last_violation_at sebagai basis baru
-            // Simpan sisa waktu yang akurat berdasarkan snapshot
-            $remaining = $session->getTimeLeftSeconds();
-            $session->update([
-                'reentry_token'     => null,
-                'last_violation_at' => now(),
-                'remaining_seconds' => $remaining,
-            ]);
+            // ============================================================
+            // KUNCI PERBAIKAN TIMER:
+            // processReentry() melakukan:
+            //   1. reentry_token = null
+            //   2. last_violation_at = NOW()  ← basis baru untuk hitung elapsed
+            //
+            // Efeknya: setiap kali halaman di-refresh setelah re-entry,
+            // getTimeLeftSeconds() menghitung:
+            //   elapsed = now() - last_violation_at  (berapa lama sejak re-entry)
+            //   sisa    = remaining_seconds - elapsed  ✓
+            //
+            // Tanpa ini (hanya clear token):
+            //   elapsed = now() - last_violation_at  (= waktu LAMA saat violation)
+            //   sisa    = remaining_seconds - elapsed_yg_terus_bertambah  ✗ SALAH
+            // ============================================================
+            $session->processReentry();
 
             return $this->redirect(route('student.exam', $session->id), navigate: true);
         }

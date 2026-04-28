@@ -14,9 +14,9 @@ class ExamSession extends Model
     ];
 
     protected $casts = [
-        'started_at'       => 'datetime',
-        'submitted_at'     => 'datetime',
-        'last_violation_at'=> 'datetime',
+        'started_at'        => 'datetime',
+        'submitted_at'      => 'datetime',
+        'last_violation_at' => 'datetime',
     ];
 
     public function exam()       { return $this->belongsTo(Exam::class); }
@@ -30,42 +30,78 @@ class ExamSession extends Model
     }
 
     /**
-     * Hitung sisa waktu dalam detik berdasarkan server time.
-     * Jika ada remaining_seconds (disimpan saat violation), pakai itu sebagai basis.
+     * Hitung sisa waktu dalam detik.
+     *
+     * DUA MODE:
+     *
+     * Mode A — Normal (belum pernah violation):
+     *   remaining = total_durasi - (now - started_at)
+     *
+     * Mode B — Setelah violation/re-entry (ada remaining_seconds):
+     *   remaining = remaining_seconds - (now - last_violation_at)
+     *
+     *   last_violation_at di-update DUA kali:
+     *     1. Saat violation terjadi   → snapshot waktu tersisa ke remaining_seconds
+     *     2. Saat re-entry berhasil   → reset basis agar timer lanjut dari titik re-entry
+     *
+     *   Dengan ini, setiap refresh halaman akan menghitung:
+     *     elapsed = now - last_violation_at (= sejak siswa masuk kembali)
+     *     sisa    = remaining_seconds - elapsed  ✓ BENAR
      */
     public function getTimeLeftSeconds(): int
     {
         if (!$this->started_at) return 0;
 
-        $totalDurationSeconds = $this->exam->duration * 60;
+        $totalSeconds = $this->exam->duration * 60;
 
-        // Jika ada snapshot remaining_seconds (setelah violation/reentry),
-        // sisa waktu = remaining_seconds - waktu yang sudah berlalu sejak last_violation_at
         if ($this->remaining_seconds !== null && $this->last_violation_at) {
-            $elapsedSinceViolation = now()->diffInSeconds($this->last_violation_at, false);
-            // elapsedSinceViolation bisa negatif (masa lalu), kita perlu detik berlalu
             $elapsed = (int) now()->diffInSeconds($this->last_violation_at);
-            $remaining = max(0, $this->remaining_seconds - $elapsed);
-            return $remaining;
+            return max(0, $this->remaining_seconds - $elapsed);
         }
 
-        // Normal: hitung dari started_at
         $elapsed = (int) now()->diffInSeconds($this->started_at);
-        return max(0, $totalDurationSeconds - $elapsed);
+        return max(0, $totalSeconds - $elapsed);
     }
 
     /**
-     * Hitung Unix timestamp kapan ujian berakhir (untuk countdown di client).
+     * Unix timestamp kapan ujian berakhir — dipakai timer JS di client.
      */
     public function getEndTimestamp(): int
     {
-        $timeLeft = $this->getTimeLeftSeconds();
-        return now()->addSeconds($timeLeft)->timestamp;
+        return now()->addSeconds($this->getTimeLeftSeconds())->timestamp;
+    }
+
+    /**
+     * Dipanggil saat pelanggaran terjadi.
+     * Simpan sisa waktu TEPAT saat ini + catat waktu snapshot.
+     */
+    public function snapshotRemainingTime(): void
+    {
+        $this->update([
+            'remaining_seconds' => $this->getTimeLeftSeconds(),
+            'last_violation_at' => now(),
+        ]);
+    }
+
+    /**
+     * Dipanggil saat re-entry berhasil (token valid, siswa masuk kembali).
+     *
+     * KUNCI: last_violation_at di-reset ke NOW().
+     * Ini membuat getTimeLeftSeconds() menghitung elapsed dari titik ini,
+     * bukan dari saat violation — sehingga timer tidak "melompat" saat refresh.
+     *
+     * remaining_seconds TETAP (tidak diubah) = sisa waktu saat violation.
+     */
+    public function processReentry(): void
+    {
+        $this->update([
+            'reentry_token'     => null,
+            'last_violation_at' => now(), // basis baru → timer lanjut dari sini
+        ]);
     }
 
     /**
      * Generate dan simpan reentry token baru.
-     * Format: session_id + student_id + random = lebih aman dari token global
      */
     public function generateReentryToken(): string
     {
@@ -77,18 +113,7 @@ class ExamSession extends Model
     }
 
     /**
-     * Simpan snapshot waktu tersisa saat violation terjadi.
-     */
-    public function snapshotRemainingTime(): void
-    {
-        $this->update([
-            'remaining_seconds'  => $this->getTimeLeftSeconds(),
-            'last_violation_at'  => now(),
-        ]);
-    }
-
-    /**
-     * Reset reentry token setelah berhasil masuk kembali.
+     * @deprecated Pakai processReentry() agar last_violation_at juga diupdate.
      */
     public function clearReentryToken(): void
     {
