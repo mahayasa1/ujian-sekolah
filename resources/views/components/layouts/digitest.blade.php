@@ -102,7 +102,7 @@
                     @endif
                 </div>
             </div>
-            <div style="
+            {{-- <div style="
                 width: 30px;
                 height: 30px;
                 border-radius: 50%;
@@ -115,7 +115,7 @@
                 font-weight: 700;
                 color: white;
                 flex-shrink: 0;
-            ">{{ auth()->user()->initials() }}</div>
+            ">{{ auth()->user()->initials() }}</div> --}}
             <form method="POST" action="{{ route('logout') }}" style="flex-shrink:0;">
                 @csrf
                 <button type="submit" style="

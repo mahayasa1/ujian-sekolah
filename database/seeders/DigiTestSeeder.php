@@ -82,19 +82,5 @@ class DigiTestSeeder extends Seeder
                 'class_room_id' => $s['class']
             ]);
         }
-
-        // Demo student
-        $demoUser = User::create([
-            'name'     => 'Siswa Demo',
-            'email'    => 'siswa@gmail.com',
-            'password' => Hash::make('password'),
-            'role'     => 'siswa',
-        ]);
-
-        Student::create([
-            'user_id' => $demoUser->id,
-            'nis' => '2024099',
-            'class_room_id' => $kelas9a->id
-        ]);
     }
 }

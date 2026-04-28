@@ -1,5 +1,6 @@
 {{-- resources/views/livewire/teacher/exam-monitor.blade.php --}}
-<x-layouts.digitest :title="'Monitor Ujian'">
+{{-- FIX: Wrapped entire content in single <div> root element --}}
+<div>
 
 @php
     $exam           = $this->exam->load(['subject','classRoom','sessions.student.user','sessions.violations']);
@@ -26,7 +27,7 @@
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
             <div style="background:#FDEDEC;border:2px solid #C0392B;padding:6px 12px;border-radius:8px;text-align:center;">
-                <div style="font-size:9px;color:#C0392B;font-weight:700;text-transform:uppercase;">Token</div>
+                <div style="font-size:9px;color:#C0392B;font-weight:700;text-transform:uppercase;">Token Ujian</div>
                 <div style="font-size:18px;font-weight:800;color:#C0392B;letter-spacing:0.15em;font-family:monospace;">{{ $exam->token }}</div>
             </div>
             @if($exam->status==='aktif')
@@ -38,7 +39,7 @@
     </div>
 </div>
 
-{{-- Stats - scrollable grid --}}
+{{-- Stats --}}
 <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px;">
     <div style="background:white;border-radius:10px;padding:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08);border-left:4px solid #E67E22;text-align:center;">
         <div style="font-size:22px;font-weight:700;color:#E67E22;">{{ $ongoingCount }}</div>
@@ -58,11 +59,11 @@
     </div>
 </div>
 
-{{-- Live monitor table - scrollable --}}
+{{-- Live monitor table --}}
 <div style="background:white;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08);overflow:hidden;" wire:poll.5000ms>
     <div style="padding:12px 14px;border-bottom:1px solid #F3F4F6;display:flex;align-items:center;justify-content:space-between;">
         <span style="font-size:13px;font-weight:600;color:#374151;">👁️ Status Peserta <span style="font-size:11px;color:#9CA3AF;font-weight:400;">(auto-refresh 5 detik)</span></span>
-        <div style="width:8px;height:8px;border-radius:50%;background:#27AE60;animation:pulse 1.5s infinite;"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:#27AE60;animation:pulse-dot 1.5s infinite;"></div>
     </div>
 
     @if($sessions->isEmpty())
@@ -71,7 +72,6 @@
         <p style="margin:0;font-size:13px;">Belum ada siswa yang bergabung</p>
     </div>
     @else
-    {{-- Mobile card view --}}
     <div style="display:flex;flex-direction:column;gap:0;">
         @foreach($sessions->sortByDesc('started_at') as $i => $ses)
         @php
@@ -79,8 +79,9 @@
             $mins     = $timeLeft !== null ? floor($timeLeft / 60) : null;
             $secs     = $timeLeft !== null ? $timeLeft % 60 : null;
             $vCount   = $ses->violations->count();
+            $isLocked = $ses->reentry_token !== null; // siswa sedang di-lock / di luar
         @endphp
-        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:0.5px solid #F3F4F6;{{ $vCount >= 2 ? 'background:#FFF5F5;' : '' }}">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:0.5px solid #F3F4F6;{{ $vCount >= 2 ? 'background:#FFF5F5;' : '' }}{{ $isLocked ? 'background:#FFFBEB;' : '' }}">
             <div style="width:32px;height:32px;border-radius:50%;background:#F3F4F6;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#374151;flex-shrink:0;">
                 {{ $i + 1 }}
             </div>
@@ -89,20 +90,32 @@
                     {{ $ses->student?->user?->name ?? '—' }}
                 </div>
                 <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                    @if($ses->status === 'aktif')
+                    @if($isLocked)
+                        <span style="background:#FEF3C7;color:#92400E;padding:2px 6px;border-radius:999px;font-size:10px;font-weight:700;">🔒 Di Luar</span>
+                        {{-- Tampilkan reentry token untuk guru sampaikan ke siswa --}}
+                        <span style="font-family:monospace;font-size:11px;font-weight:700;color:#92400E;background:#FEF9C3;padding:2px 8px;border-radius:4px;letter-spacing:0.1em;">
+                            RE-ENTRY: {{ $ses->reentry_token }}
+                        </span>
+                    @elseif($ses->status === 'aktif')
                         <span class="badge-aktif" style="font-size:10px;padding:2px 6px;">● Aktif</span>
                     @elseif($ses->status === 'selesai')
                         <span class="badge-selesai" style="font-size:10px;padding:2px 6px;">✓ Selesai</span>
                     @else
                         <span class="badge-draft" style="font-size:10px;padding:2px 6px;">Belum</span>
                     @endif
+
                     @if($vCount > 0)
-                    <span style="background:#FDEDEC;color:#C0392B;padding:2px 6px;border-radius:999px;font-size:10px;font-weight:700;">⚠️ {{ $vCount }}</span>
+                    <span style="background:#FDEDEC;color:#C0392B;padding:2px 6px;border-radius:999px;font-size:10px;font-weight:700;">⚠️ {{ $vCount }}x pelanggaran</span>
                     @endif
-                    @if($ses->status === 'aktif' && $timeLeft !== null)
+
+                    @if($ses->status === 'aktif' && $timeLeft !== null && !$isLocked)
                     <span style="font-family:monospace;font-size:11px;font-weight:700;color:{{ $timeLeft < 300 ? '#C0392B' : '#374151' }};">
-                        {{ sprintf('%02d:%02d', $mins, $secs) }}
+                        ⏱ {{ sprintf('%02d:%02d', $mins, $secs) }}
                     </span>
+                    @endif
+
+                    @if($ses->last_violation_at && $isLocked)
+                    <span style="font-size:10px;color:#9CA3AF;">Keluar: {{ $ses->last_violation_at->format('H:i:s') }}</span>
                     @endif
                 </div>
             </div>
@@ -121,7 +134,7 @@
 </div>
 
 <style>
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
 </style>
 
-</x-layouts.digitest>
+</div>

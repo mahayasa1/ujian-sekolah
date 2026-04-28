@@ -40,11 +40,6 @@
 </a>
 
 {{-- Kartu full: DATA KELAS --}}
-<a href="{{ route('admin.classes') }}"
-   style="background:white;border-radius:12px;padding:20px 16px;box-shadow:0 1px 3px rgba(0,0,0,0.08);text-align:center;text-decoration:none;color:inherit;display:block;">
-    <div style="font-size:28px;margin-bottom:6px;">🏫</div>
-    <div style="font-size:14px;font-weight:700;color:#1C1C1E;text-transform:uppercase;letter-spacing:0.3px;">DATA KELAS</div>
-    <div style="font-size:11px;color:#8E8E93;margin-top:2px;">{{ $stats['total_kelas'] }} kelas</div>
-</a>
+
 
 </div>

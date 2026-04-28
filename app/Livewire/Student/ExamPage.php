@@ -10,23 +10,33 @@ use Livewire\Component;
 class ExamPage extends Component
 {
     public ExamSession $session;
-    public int $currentIndex = 0;
-    public array $answers    = [];
-    public int $violationCount      = 0;
-    public bool $showSubmitConfirm  = false;
+    public int $currentIndex       = 0;
+    public array $answers          = [];
+    public int $violationCount     = 0;
+    public bool $showSubmitConfirm = false;
 
     public function mount(ExamSession $session)
     {
+        // Validasi kepemilikan
         if ($session->student_id !== auth()->user()->student?->id) {
             abort(403);
         }
+
+        // Jika sudah selesai, redirect ke result
         if ($session->status === 'selesai') {
             return $this->redirect(route('student.result', $session->id), navigate: true);
         }
 
+        // Jika ada reentry_token (artinya siswa sedang di-lock), redirect ke dashboard
+        // Ini tidak akan terjadi dalam flow normal karena reentry_token di-clear sebelum masuk
+        // Tapi sebagai double-check
+        if ($session->reentry_token) {
+            return $this->redirect(route('student.dashboard'), navigate: true);
+        }
+
         $this->session = $session;
 
-        // Pre-load answers (hanya untuk mode soal manual)
+        // Pre-load answers
         foreach ($session->answers as $ans) {
             $this->answers[$ans->question_id] = $ans->answer;
         }
@@ -36,7 +46,6 @@ class ExamPage extends Component
 
     public function getQuestionsProperty()
     {
-        // Jika pakai Google Form, tidak ada soal manual
         if ($this->session->exam->google_form_url) {
             return collect();
         }
@@ -58,19 +67,46 @@ class ExamPage extends Component
         $this->currentIndex = $index;
     }
 
-    public function reportViolation(string $type)
+    /**
+     * Dipanggil dari JS saat deteksi pindah tab / blur window.
+     * Catat violation, snapshot waktu, generate reentry token, redirect ke dashboard.
+     */
+    public function reportViolationAndLock(string $type)
     {
+        // Simpan violation
         Violation::create([
             'exam_session_id' => $this->session->id,
             'type'            => $type,
-            'description'     => 'Pelanggaran otomatis: ' . $type,
+            'description'     => 'Pelanggaran otomatis: ' . $type . ' pada ' . now()->format('H:i:s'),
         ]);
 
         $this->violationCount++;
 
+        // Cek apakah sudah 3 pelanggaran → otomatis selesai
         if ($this->violationCount >= 3) {
-            $this->autoSubmit();
+            $this->forceSubmit();
+            return;
         }
+
+        // Snapshot sisa waktu agar timer server akurat saat reentry
+        $this->session->snapshotRemainingTime();
+
+        // Generate reentry token unik per session
+        $reentryToken = $this->session->generateReentryToken();
+
+        // Kirim event ke guru (bisa diperluas ke broadcast)
+        // Untuk sekarang cukup catat di DB
+
+        // Redirect ke dashboard — siswa harus input reentry token untuk kembali
+        $this->redirect(route('student.dashboard'), navigate: true);
+    }
+
+    /**
+     * Tetap ada untuk backward compat dari JS lama, delegate ke reportViolationAndLock
+     */
+    public function reportViolation(string $type)
+    {
+        $this->reportViolationAndLock($type);
     }
 
     public function confirmSubmit()
@@ -80,7 +116,6 @@ class ExamPage extends Component
 
     public function submit()
     {
-        // Untuk mode Google Form, tidak ada auto-score
         if (!$this->session->exam->google_form_url) {
             $this->autoScore();
         }
@@ -88,12 +123,13 @@ class ExamPage extends Component
         $this->session->update([
             'status'       => 'selesai',
             'submitted_at' => now(),
+            'reentry_token'=> null,
         ]);
 
         return $this->redirect(route('student.result', $this->session->id), navigate: true);
     }
 
-    private function autoSubmit()
+    private function forceSubmit()
     {
         if (!$this->session->exam->google_form_url) {
             $this->autoScore();
@@ -102,6 +138,7 @@ class ExamPage extends Component
         $this->session->update([
             'status'       => 'selesai',
             'submitted_at' => now(),
+            'reentry_token'=> null,
         ]);
 
         $this->redirect(route('student.dashboard'), navigate: true);
@@ -132,7 +169,7 @@ class ExamPage extends Component
 
     public function autoSave()
     {
-        // Triggered by wire:poll setiap 30 detik
+        // Triggered by wire:poll setiap 30 detik — bisa diisi logika ping ke server
     }
 
     public function render()

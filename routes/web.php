@@ -27,7 +27,7 @@ Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->gr
 
     Route::get('/exam/{session}', \App\Livewire\Student\ExamPage::class)->name('exam');
 
-    Route::get('/result/{session}', \App\Livewire\Student\Result::class)->name('result');
+Route::get('/result/{session}', \App\Livewire\Student\Result::class)->name('result');
 
     Route::get('/results', function () {
         $student  = auth()->user()->student;
