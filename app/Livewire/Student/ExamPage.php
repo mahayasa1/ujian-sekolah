@@ -82,12 +82,6 @@ class ExamPage extends Component
 
         $this->violationCount++;
 
-        // Cek apakah sudah 3 pelanggaran → otomatis selesai
-        if ($this->violationCount >= 3) {
-            $this->forceSubmit();
-            return;
-        }
-
         // Snapshot sisa waktu agar timer server akurat saat reentry
         $this->session->snapshotRemainingTime();
 

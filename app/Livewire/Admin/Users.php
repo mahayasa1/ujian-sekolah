@@ -26,11 +26,11 @@ class Users extends Component
     public string $role = 'siswa';
     public string $nip = '';
     public string $nis = '';
+    public string $nisn = '';
     public int $classRoomId = 0;
 
     public function mount()
     {
-        // Baca filter role dari query string (misal dari dashboard)
         if (request()->has('role')) {
             $this->roleFilter = request('role');
         }
@@ -66,11 +66,12 @@ class Users extends Component
         } elseif ($this->role === 'siswa') {
             Student::updateOrCreate(['user_id' => $user->id], [
                 'nis'           => $this->nis ?: null,
+                'nisn'          => $this->nisn ?: null,
                 'class_room_id' => $this->classRoomId ?: null,
             ]);
         }
 
-        $this->reset(['showForm', 'editId', 'name', 'email', 'password', 'nip', 'nis', 'classRoomId']);
+        $this->reset(['showForm', 'editId', 'name', 'email', 'password', 'nip', 'nis', 'nisn', 'classRoomId']);
         session()->flash('success', 'Pengguna berhasil disimpan.');
     }
 
@@ -83,6 +84,7 @@ class Users extends Component
         $this->role        = $user->role;
         $this->nip         = $user->teacher?->nip ?? '';
         $this->nis         = $user->student?->nis ?? '';
+        $this->nisn        = $user->student?->nisn ?? '';
         $this->classRoomId = $user->student?->class_room_id ?? 0;
         $this->showForm    = true;
     }

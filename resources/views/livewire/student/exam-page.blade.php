@@ -1,260 +1,374 @@
 {{-- resources/views/livewire/student/exam-page.blade.php --}}
-{{-- FIX: Entire page wrapped in single Livewire root <div> --}}
-{{-- NEW: Tab-switch → violation → lock → reentry token flow --}}
+{{-- FIXED: Mobile responsive + Violation overlay 5 detik --}}
 <div
     x-data="examSecurity(@js($session->id), @js($session->exam->google_form_url ? true : false))"
     x-init="init()"
+    style="background:#F3F4F6;min-height:100vh;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif;"
 >
 
 {{-- ============================================================
-     FULL-SCREEN OVERLAY saat violation terdeteksi
+     VIOLATION OVERLAY — Fullscreen, 5 detik countdown
      ============================================================ --}}
 <div
     x-show="showViolationOverlay"
-    x-transition.opacity
-    style="position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;color:white;text-align:center;padding:2rem;"
     x-cloak
+    style="position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;"
 >
-    <div style="font-size:4rem;margin-bottom:1rem;">🚫</div>
-    <h2 style="font-size:1.5rem;font-weight:800;margin:0 0 0.5rem;">Pelanggaran Terdeteksi!</h2>
-    <p style="font-size:1rem;opacity:0.85;margin:0 0 1rem;max-width:400px;line-height:1.6;">
-        Kamu keluar dari halaman ujian. Ujian dikunci otomatis.<br>
-        Minta <strong>token re-entry</strong> dari guru pengawas untuk melanjutkan.
-    </p>
-    <div style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.3);padding:10px 20px;border-radius:8px;font-size:0.9rem;opacity:0.8;margin-bottom:1.5rem;">
-        ⏰ Mengalihkan ke dashboard dalam <span x-text="redirectCountdown"></span> detik...
+    <div style="background:white;border-radius:20px;max-width:380px;width:100%;overflow:hidden;box-shadow:0 25px 80px rgba(0,0,0,0.5);text-align:center;">
+
+        {{-- Red top bar --}}
+        <div style="background:linear-gradient(135deg,#C0392B,#7B241C);padding:28px 24px 20px;">
+            <div style="font-size:48px;margin-bottom:8px;">🚫</div>
+            <div style="font-size:18px;font-weight:800;color:white;line-height:1.3;">Pelanggaran Terdeteksi!</div>
+        </div>
+
+        {{-- Body --}}
+        <div style="padding:24px;">
+            <p style="font-size:14px;color:#374151;line-height:1.7;margin:0 0 20px;">
+                Kamu keluar dari halaman ujian.<br>
+                Ujian dikunci otomatis. Minta <strong style="color:#C0392B;">token re-entry</strong> dari guru pengawas untuk melanjutkan.
+            </p>
+
+            {{-- Countdown circle --}}
+            <div style="display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+                <div style="
+                    width:80px;height:80px;border-radius:50%;
+                    background:linear-gradient(135deg,#FDEDEC,#F8D7DA);
+                    border:4px solid #C0392B;
+                    display:flex;flex-direction:column;align-items:center;justify-content:center;
+                    box-shadow:0 0 0 4px rgba(192,57,43,0.15);
+                ">
+                    <div x-text="redirectCountdown" style="font-size:28px;font-weight:800;color:#C0392B;line-height:1;"></div>
+                    <div style="font-size:9px;color:#C0392B;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">detik</div>
+                </div>
+            </div>
+
+            <div style="background:#FFF3CD;border:1px solid #FFC107;border-radius:10px;padding:12px 16px;font-size:12px;color:#856404;line-height:1.6;">
+                ⏰ Mengalihkan ke dashboard dalam <strong x-text="redirectCountdown"></strong> detik...<br>
+                <span style="font-size:11px;opacity:0.8;">Sisa waktu ujian terus berjalan di server</span>
+            </div>
+        </div>
     </div>
-    <div style="font-size:0.8rem;opacity:0.6;">Sisa waktu ujian terus berjalan di server.</div>
 </div>
 
-{{-- Exam Header --}}
-<header style="background:linear-gradient(135deg,#C0392B,#922B21);height:56px;display:flex;align-items:center;padding:0 1.5rem;position:sticky;top:0;z-index:50;gap:1rem;">
-    <div style="display:flex;align-items:center;gap:0.75rem;flex:1;">
-        <div style="font-size:1.25rem;">📋</div>
-        <div>
-            <div style="font-size:0.65rem;color:rgba(255,255,255,0.7);">{{ $session->exam->subject->name }}</div>
-            <div style="font-size:0.9rem;font-weight:700;color:white;">{{ $session->exam->title }}</div>
+{{-- ============================================================
+     HEADER UJIAN
+     ============================================================ --}}
+<header style="
+    background:linear-gradient(135deg,#C0392B,#922B21);
+    height:54px;
+    display:flex;
+    align-items:center;
+    padding:0 12px;
+    position:sticky;
+    top:0;
+    z-index:50;
+    gap:10px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.25);
+">
+    <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
+        <div style="font-size:18px;flex-shrink:0;">📋</div>
+        <div style="min-width:0;">
+            <div style="font-size:10px;color:rgba(255,255,255,0.7);line-height:1;">{{ $session->exam->subject->name }}</div>
+            <div style="font-size:13px;font-weight:700;color:white;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $session->exam->title }}</div>
         </div>
     </div>
 
     @if($violationCount > 0)
-    <div style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);padding:0.3rem 0.75rem;border-radius:0.4rem;color:white;font-size:0.75rem;font-weight:600;">
-        ⚠️ Pelanggaran: {{ $violationCount }}/3
+    <div style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);padding:3px 8px;border-radius:6px;color:white;font-size:11px;font-weight:600;flex-shrink:0;">
+        ⚠️ {{ $violationCount }}/3
     </div>
     @endif
 
-    <div style="color:rgba(255,255,255,0.8);font-size:0.8rem;">{{ auth()->user()->name }}</div>
+    <div style="color:rgba(255,255,255,0.85);font-size:11px;flex-shrink:0;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ auth()->user()->name }}</div>
 </header>
 
-{{-- Main Content --}}
-<div style="max-width:1100px;margin:1.5rem auto;padding:0 1rem;">
-<div class="exam-container">
+{{-- ============================================================
+     TIMER BAR (full width, sticky di mobile)
+     ============================================================ --}}
+<div id="exam-timer" style="
+    background:linear-gradient(135deg,#C0392B,#922B21);
+    color:white;
+    text-align:center;
+    padding:10px 16px;
+    position:sticky;
+    top:54px;
+    z-index:40;
+    box-shadow:0 2px 6px rgba(192,57,43,0.3);
+">
+    <div style="font-size:9px;font-weight:700;opacity:0.8;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:2px;">⏱ SISA WAKTU</div>
+    <div id="timer-display" style="font-size:28px;font-weight:800;font-family:'SF Mono','Courier New',monospace;letter-spacing:3px;">--:--</div>
+</div>
 
-    {{-- PANEL SOAL / GOOGLE FORM --}}
-    <div class="exam-question-panel" wire:poll.30000ms="autoSave">
+{{-- ============================================================
+     MAIN CONTENT
+     ============================================================ --}}
+<div style="max-width:800px;margin:0 auto;padding:12px;">
 
-        @if($session->exam->google_form_url)
-            {{-- Mode Google Form Embed --}}
-            <div style="margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid #F3F4F6;">
-                <div style="font-size:0.75rem;font-weight:700;color:#C0392B;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">
-                    📋 Ujian via Google Form
-                </div>
-                <div style="font-size:0.875rem;color:#374151;font-weight:500;">{{ $session->exam->title }}</div>
-                <div style="font-size:0.78rem;color:#9CA3AF;margin-top:2px;">
-                    Kerjakan soal di form di bawah ini. Setelah selesai, klik tombol Kumpulkan.
-                </div>
+    {{-- Progress bar (mobile) --}}
+    @if(!$session->exam->google_form_url)
+    @php $totalQ = $this->questions->count(); @endphp
+    <div style="background:white;border-radius:10px;padding:10px 14px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:10px;display:flex;align-items:center;gap:10px;">
+        <div style="flex:1;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                <span style="font-size:11px;color:#6B7280;font-weight:500;">Progress</span>
+                <span style="font-size:11px;font-weight:700;color:#27AE60;">{{ count($answers) }}/{{ $totalQ }} terjawab</span>
             </div>
-
-            {{-- Google Form Iframe - reload fresh saat reentry (x-key memaksa re-render) --}}
-            <div x-data="{ frameKey: Date.now() }">
-                <iframe
-                    :key="frameKey"
-                    class="google-form-iframe"
-                    src="{{ $session->exam->google_form_url . (str_contains($session->exam->google_form_url, '?') ? '&' : '?') . 'embedded=true' }}"
-                    frameborder="0"
-                    marginheight="0"
-                    marginwidth="0"
-                    allow="camera; microphone"
-                    style="height:700px;"
-                >
-                    Memuat Google Form...
-                </iframe>
+            <div style="height:5px;background:#F3F4F6;border-radius:3px;overflow:hidden;">
+                <div style="height:100%;background:linear-gradient(90deg,#27AE60,#2ECC71);border-radius:3px;width:{{ $totalQ > 0 ? round((count($answers)/$totalQ)*100) : 0 }}%;transition:width 0.4s;"></div>
             </div>
+        </div>
+        <div style="font-size:18px;font-weight:800;color:#27AE60;flex-shrink:0;">{{ $totalQ > 0 ? round((count($answers)/$totalQ)*100) : 0 }}%</div>
+    </div>
+    @endif
 
-            <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid #F3F4F6;display:flex;justify-content:flex-end;">
-                <button class="btn-digi-success" wire:click="confirmSubmit">
-                    ✅ Saya Sudah Selesai — Kumpulkan
-                </button>
-            </div>
-
-        @else
-            {{-- Mode soal manual --}}
-            @php
-                $questions = $this->questions;
-                $question  = $questions->get($currentIndex);
-                $total     = $questions->count();
-            @endphp
-
-            @if(!$question)
-            <div style="text-align:center;padding:3rem;color:#9CA3AF;">
-                <div style="font-size:2rem;margin-bottom:0.5rem;">📭</div>
-                <p>Belum ada soal pada ujian ini.</p>
-            </div>
-            @else
-
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid #F3F4F6;">
-                <div>
-                    <span style="font-size:0.75rem;font-weight:700;color:#C0392B;text-transform:uppercase;letter-spacing:0.05em;">Soal {{ $currentIndex + 1 }} dari {{ $total }}</span>
-                    <div style="width:200px;height:4px;background:#F3F4F6;border-radius:2px;margin-top:0.4rem;">
-                        <div style="height:100%;background:linear-gradient(90deg,#C0392B,#F39C12);border-radius:2px;width:{{ (($currentIndex+1)/$total)*100 }}%;transition:width 0.3s;"></div>
-                    </div>
-                </div>
-                <span style="background:#FDEDEC;color:#C0392B;padding:0.2rem 0.75rem;border-radius:999px;font-size:0.75rem;font-weight:600;">
-                    {{ strtoupper($question->type === 'pg' ? 'Pilihan Ganda' : 'Essay') }}
-                </span>
-            </div>
-
-            @if(isset($question->image) && $question->image)
-            <div style="margin-bottom:1rem;">
-                <img src="{{ asset('storage/'.$question->image) }}" alt="Gambar soal" style="max-width:100%;border-radius:0.5rem;border:1px solid #E5E7EB;">
-            </div>
-            @endif
-
-            <div style="font-size:1rem;line-height:1.75;color:#1F2937;margin-bottom:1.75rem;font-weight:500;">
-                {{ $question->question }}
-            </div>
-
-            @if($question->type === 'pg')
-            <div>
-                @foreach(['A','B','C','D','E'] as $opt)
-                @php $val = 'option_'.strtolower($opt); @endphp
-                @if(isset($question->$val) && $question->$val)
-                <button type="button"
-                    class="option-btn {{ ($answers[$question->id] ?? '') === $opt ? 'selected' : '' }}"
-                    wire:click="saveAnswer({{ $question->id }}, '{{ $opt }}')"
-                >
-                    <span class="option-circle">{{ $opt }}</span>
-                    <span>{{ $question->$val }}</span>
-                </button>
-                @endif
-                @endforeach
-            </div>
-            @else
-            <div>
-                <label style="font-size:0.8rem;font-weight:600;color:#6B7280;display:block;margin-bottom:0.5rem;">Jawaban Anda:</label>
-                <textarea
-                    wire:model.lazy="answers.{{ $question->id }}"
-                    wire:change="saveAnswer({{ $question->id }}, $event.target.value)"
-                    rows="6"
-                    placeholder="Tuliskan jawaban Anda di sini..."
-                    style="width:100%;padding:0.875rem;border:2px solid #E5E7EB;border-radius:0.75rem;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;outline:none;"
-                    onfocus="this.style.borderColor='#C0392B'"
-                    onblur="this.style.borderColor='#E5E7EB'"
-                >{{ $answers[$question->id] ?? '' }}</textarea>
-            </div>
-            @endif
-
-            <div style="display:flex;justify-content:space-between;margin-top:1.75rem;padding-top:1rem;border-top:1px solid #F3F4F6;">
-                <button class="btn-digi-outline" wire:click="goTo({{ max(0, $currentIndex - 1) }})"
-                    @if($currentIndex === 0) disabled style="opacity:0.4;cursor:not-allowed;" @endif>
-                    ← Sebelumnya
-                </button>
-                @if($currentIndex < $total - 1)
-                <button class="btn-digi-primary" wire:click="goTo({{ $currentIndex + 1 }})">Selanjutnya →</button>
-                @else
-                <button class="btn-digi-success" wire:click="confirmSubmit">✅ Selesaikan Ujian</button>
-                @endif
-            </div>
-            @endif
-        @endif
+    {{-- ===== GOOGLE FORM MODE ===== --}}
+    @if($session->exam->google_form_url)
+    <div style="background:white;border-radius:12px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:700;color:#C0392B;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">📋 Ujian via Google Form</div>
+        <div style="font-size:13px;color:#374151;margin-bottom:4px;font-weight:500;">{{ $session->exam->title }}</div>
+        <div style="font-size:11px;color:#9CA3AF;">Kerjakan soal di form di bawah ini, lalu klik tombol Kumpulkan.</div>
     </div>
 
-    {{-- SIDEBAR --}}
-    <div class="exam-sidebar-panel">
-        {{-- Timer --}}
-        <div class="exam-timer" id="exam-timer">
-            <div style="font-size:0.7rem;opacity:0.85;margin-bottom:0.25rem;text-transform:uppercase;letter-spacing:0.05em;">Sisa Waktu</div>
-            <div class="exam-timer-value" id="timer-display">--:--</div>
+    <div x-data="{ frameKey: Date.now() }">
+        <iframe
+            :key="frameKey"
+            src="{{ $session->exam->google_form_url . (str_contains($session->exam->google_form_url, '?') ? '&' : '?') . 'embedded=true' }}"
+            style="width:100%;border:none;border-radius:12px;min-height:70vh;box-shadow:0 1px 3px rgba(0,0,0,0.08);"
+            frameborder="0"
+            marginheight="0"
+            marginwidth="0"
+            allow="camera; microphone"
+        >Memuat...</iframe>
+    </div>
+
+    <div style="margin-top:12px;">
+        <button class="btn-digi-success" style="width:100%;justify-content:center;padding:14px;font-size:15px;" wire:click="confirmSubmit">
+            ✅ Saya Sudah Selesai — Kumpulkan
+        </button>
+    </div>
+
+    {{-- ===== MANUAL QUESTION MODE ===== --}}
+    @else
+    @php
+        $questions = $this->questions;
+        $question  = $questions->get($currentIndex);
+        $total     = $questions->count();
+    @endphp
+
+    @if(!$question)
+    <div style="background:white;border-radius:12px;padding:40px 16px;text-align:center;color:#9CA3AF;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+        <div style="font-size:32px;margin-bottom:8px;">📭</div>
+        <p style="font-size:14px;margin:0;">Belum ada soal pada ujian ini.</p>
+    </div>
+    @else
+
+    {{-- Question card --}}
+    <div style="background:white;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:10px;" wire:poll.30000ms="autoSave">
+
+        {{-- Question header --}}
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <div style="font-size:12px;font-weight:700;color:#C0392B;text-transform:uppercase;letter-spacing:0.5px;">
+                Soal {{ $currentIndex + 1 }} / {{ $total }}
+            </div>
+            <span style="background:#FDEDEC;color:#C0392B;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;">
+                {{ $question->type === 'pg' ? 'Pilihan Ganda' : 'Essay' }}
+            </span>
         </div>
 
-        @if(!$session->exam->google_form_url)
-        @php $total2 = $this->questions->count(); @endphp
-        <div style="margin-bottom:1rem;">
-            <div style="display:flex;justify-content:space-between;margin-bottom:0.4rem;">
-                <span style="font-size:0.75rem;color:#6B7280;">Terjawab</span>
-                <span style="font-size:0.75rem;font-weight:600;color:#27AE60;">{{ count($answers) }} / {{ $total2 }}</span>
-            </div>
-            <div style="height:6px;background:#F3F4F6;border-radius:3px;">
-                <div style="height:100%;background:#27AE60;border-radius:3px;width:{{ $total2 > 0 ? (count($answers)/$total2)*100 : 0 }}%;transition:width 0.3s;"></div>
-            </div>
+        {{-- Progress dots --}}
+        <div style="height:3px;background:#F3F4F6;border-radius:2px;margin-bottom:16px;overflow:hidden;">
+            <div style="height:100%;background:linear-gradient(90deg,#C0392B,#F39C12);border-radius:2px;width:{{ (($currentIndex+1)/$total)*100 }}%;transition:width 0.3s;"></div>
         </div>
 
-        <div style="font-size:0.75rem;font-weight:600;color:#6B7280;margin-bottom:0.5rem;">Navigasi Soal</div>
-        <div class="question-number-grid">
-            @foreach($this->questions as $i => $q)
-            <button class="q-num-btn {{ $i === $currentIndex ? 'current' : (isset($answers[$q->id]) ? 'answered' : '') }}"
-                wire:click="goTo({{ $i }})">{{ $i + 1 }}</button>
+        {{-- Question image (if any) --}}
+        @if(isset($question->image) && $question->image)
+        <div style="margin-bottom:14px;">
+            <img src="{{ asset('storage/'.$question->image) }}" alt="Gambar soal" style="max-width:100%;border-radius:8px;border:1px solid #E5E7EB;">
+        </div>
+        @endif
+
+        {{-- Question text --}}
+        <div style="font-size:15px;line-height:1.75;color:#1F2937;margin-bottom:18px;font-weight:500;">
+            {{ $question->question }}
+        </div>
+
+        {{-- Options --}}
+        @if($question->type === 'pg')
+        <div>
+            @foreach(['A','B','C','D','E'] as $opt)
+            @php $val = 'option_'.strtolower($opt); @endphp
+            @if(isset($question->$val) && $question->$val)
+            <button
+                type="button"
+                wire:click="saveAnswer({{ $question->id }}, '{{ $opt }}')"
+                style="
+                    display:flex;align-items:center;gap:12px;
+                    width:100%;text-align:left;
+                    padding:12px 14px;
+                    border:2px solid {{ ($answers[$question->id] ?? '') === $opt ? '#C0392B' : '#E5E7EB' }};
+                    border-radius:10px;
+                    background:{{ ($answers[$question->id] ?? '') === $opt ? 'rgba(192,57,43,0.06)' : 'white' }};
+                    cursor:pointer;
+                    margin-bottom:8px;
+                    font-size:14px;
+                    color:{{ ($answers[$question->id] ?? '') === $opt ? '#C0392B' : '#374151' }};
+                    font-weight:{{ ($answers[$question->id] ?? '') === $opt ? '600' : '400' }};
+                    transition:all 0.15s;
+                    -webkit-appearance:none;
+                    font-family:inherit;
+                "
+            >
+                <span style="
+                    width:32px;height:32px;border-radius:50%;
+                    border:2px solid {{ ($answers[$question->id] ?? '') === $opt ? '#C0392B' : '#D1D5DB' }};
+                    background:{{ ($answers[$question->id] ?? '') === $opt ? '#C0392B' : 'white' }};
+                    display:flex;align-items:center;justify-content:center;
+                    font-weight:700;font-size:13px;
+                    color:{{ ($answers[$question->id] ?? '') === $opt ? 'white' : '#6B7280' }};
+                    flex-shrink:0;
+                ">{{ $opt }}</span>
+                <span>{{ $question->$val }}</span>
+            </button>
+            @endif
             @endforeach
         </div>
-
-        <div style="display:flex;gap:0.75rem;margin-top:0.75rem;flex-wrap:wrap;">
-            <div style="display:flex;align-items:center;gap:0.3rem;font-size:0.7rem;color:#6B7280;">
-                <div style="width:14px;height:14px;border-radius:3px;background:#D5F5E3;border:1px solid #27AE60;"></div> Terjawab
-            </div>
-            <div style="display:flex;align-items:center;gap:0.3rem;font-size:0.7rem;color:#6B7280;">
-                <div style="width:14px;height:14px;border-radius:3px;background:#C0392B;"></div> Sekarang
-            </div>
+        @else
+        <div>
+            <label style="font-size:12px;font-weight:600;color:#6B7280;display:block;margin-bottom:6px;">Jawaban Anda:</label>
+            <textarea
+                wire:model.lazy="answers.{{ $question->id }}"
+                wire:change="saveAnswer({{ $question->id }}, $event.target.value)"
+                rows="5"
+                placeholder="Tuliskan jawaban Anda di sini..."
+                style="width:100%;padding:12px;border:2px solid #E5E7EB;border-radius:10px;font-size:14px;resize:vertical;font-family:inherit;line-height:1.6;outline:none;box-sizing:border-box;"
+                onfocus="this.style.borderColor='#C0392B'"
+                onblur="this.style.borderColor='#E5E7EB'"
+            >{{ $answers[$question->id] ?? '' }}</textarea>
         </div>
         @endif
 
-        <div style="margin-top:1.25rem;">
-            <button class="btn-digi-success" style="width:100%;justify-content:center;display:flex;" wire:click="confirmSubmit">
-                ✅ Kumpulkan Jawaban
+        {{-- Navigation buttons --}}
+        <div style="display:flex;justify-content:space-between;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid #F3F4F6;">
+            <button
+                wire:click="goTo({{ max(0, $currentIndex - 1) }})"
+                @if($currentIndex === 0) disabled @endif
+                style="
+                    flex:1;padding:11px;border:2px solid #E5E7EB;border-radius:10px;
+                    background:white;color:#374151;font-size:14px;font-weight:600;
+                    cursor:{{ $currentIndex === 0 ? 'not-allowed' : 'pointer' }};
+                    opacity:{{ $currentIndex === 0 ? '0.4' : '1' }};
+                    font-family:inherit;
+                ">
+                ← Sebelumnya
             </button>
+            @if($currentIndex < $total - 1)
+            <button
+                wire:click="goTo({{ $currentIndex + 1 }})"
+                style="flex:1;padding:11px;background:#C0392B;border:none;border-radius:10px;color:white;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">
+                Selanjutnya →
+            </button>
+            @else
+            <button
+                wire:click="confirmSubmit"
+                style="flex:1;padding:11px;background:#27AE60;border:none;border-radius:10px;color:white;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+                ✅ Selesai
+            </button>
+            @endif
         </div>
+    </div>
 
+    {{-- Number navigation grid --}}
+    <div style="background:white;border-radius:12px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:10px;">
+        <div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Navigasi Soal</div>
+        <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:5px;">
+            @foreach($this->questions as $i => $q)
+            <button
+                wire:click="goTo({{ $i }})"
+                style="
+                    aspect-ratio:1;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;
+                    border:2px solid {{ $i === $currentIndex ? '#C0392B' : (isset($answers[$q->id]) ? '#27AE60' : '#E5E7EB') }};
+                    background:{{ $i === $currentIndex ? '#C0392B' : (isset($answers[$q->id]) ? '#D5F5E3' : 'white') }};
+                    color:{{ $i === $currentIndex ? 'white' : (isset($answers[$q->id]) ? '#1E8449' : '#9CA3AF') }};
+                "
+            >{{ $i + 1 }}</button>
+            @endforeach
+        </div>
+        <div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:#6B7280;">
+                <div style="width:12px;height:12px;border-radius:3px;background:#D5F5E3;border:1.5px solid #27AE60;"></div> Terjawab
+            </div>
+            <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:#6B7280;">
+                <div style="width:12px;height:12px;border-radius:3px;background:#C0392B;"></div> Sekarang
+            </div>
+            <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:#6B7280;">
+                <div style="width:12px;height:12px;border-radius:3px;background:white;border:1.5px solid #E5E7EB;"></div> Belum
+            </div>
+        </div>
+    </div>
+
+    @endif
+    @endif
+
+    {{-- Submit button (always visible) --}}
+    <div style="background:white;border-radius:12px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:10px;">
+        <button
+            wire:click="confirmSubmit"
+            style="width:100%;padding:13px;background:#27AE60;border:none;border-radius:10px;color:white;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;">
+            ✅ Kumpulkan Jawaban
+        </button>
         @if($violationCount > 0)
-        <div style="margin-top:0.75rem;background:#FDEDEC;border:1px solid #F1948A;border-radius:0.5rem;padding:0.6rem 0.875rem;font-size:0.78rem;color:#C0392B;font-weight:600;">
-            ⚠️ {{ $violationCount }}/3 Pelanggaran
+        <div style="margin-top:10px;background:#FDEDEC;border:1px solid #F1948A;border-radius:8px;padding:8px 12px;font-size:12px;color:#C0392B;font-weight:600;text-align:center;">
+            ⚠️ Pelanggaran: {{ $violationCount }}/3 — Hati-hati, jangan berpindah tab!
         </div>
         @endif
-
-        <div style="margin-top:1rem;background:#FFFBEB;border:0.5px solid #FCD34D;border-radius:0.5rem;padding:0.6rem 0.875rem;font-size:0.72rem;color:#78350F;line-height:1.6;">
-            🔒 <strong>Mode Aman Aktif</strong><br>
-            Keluar dari halaman akan mengunci ujian. Butuh token re-entry dari guru.
+        <div style="margin-top:8px;background:#FFFBEB;border:1px solid #FCD34D;border-radius:8px;padding:8px 12px;font-size:11px;color:#78350F;line-height:1.6;text-align:center;">
+            🔒 Keluar dari halaman akan mengunci ujian. Butuh token re-entry dari guru.
         </div>
     </div>
 
 </div>
-</div>
 
-{{-- Modal Konfirmasi Submit --}}
+{{-- ============================================================
+     MODAL KONFIRMASI SUBMIT
+     ============================================================ --}}
 @if($showSubmitConfirm)
-<div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:100;">
-    <div style="background:white;border-radius:1rem;padding:2rem;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
-        <div style="font-size:3rem;margin-bottom:0.75rem;">📋</div>
-        <h2 style="margin:0 0 0.5rem;font-size:1.25rem;font-weight:700;color:#1F2937;">Kumpulkan Jawaban?</h2>
+<div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:flex-end;justify-content:center;z-index:100;">
+    <div style="background:white;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:480px;box-shadow:0 -8px 30px rgba(0,0,0,0.2);">
+        <div style="text-align:center;margin-bottom:20px;">
+            <div style="font-size:40px;margin-bottom:10px;">📋</div>
+            <h2 style="margin:0 0 6px;font-size:18px;font-weight:800;color:#1F2937;">Kumpulkan Jawaban?</h2>
 
-        @if(!$session->exam->google_form_url)
-        @php $unanswered2 = $this->questions->count() - count($answers); @endphp
-        <p style="margin:0 0 0.5rem;font-size:0.875rem;color:#6B7280;">
-            Anda telah menjawab <strong style="color:#27AE60;">{{ count($answers) }}</strong> dari
-            <strong>{{ $this->questions->count() }}</strong> soal.
-        </p>
-        @if($unanswered2 > 0)
-        <p style="margin:0 0 1.5rem;font-size:0.875rem;color:#E67E22;">⚠️ {{ $unanswered2 }} soal belum dijawab</p>
-        @else
-        <p style="margin:0 0 1.5rem;font-size:0.875rem;color:#27AE60;">✅ Semua soal sudah dijawab</p>
-        @endif
-        @else
-        <p style="margin:0 0 1.5rem;font-size:0.875rem;color:#6B7280;">
-            Pastikan kamu sudah submit jawaban di Google Form sebelum mengklik tombol ini.
-        </p>
-        @endif
+            @if(!$session->exam->google_form_url)
+            @php $unanswered2 = $this->questions->count() - count($answers); @endphp
+            <p style="margin:0 0 6px;font-size:14px;color:#6B7280;">
+                Terjawab: <strong style="color:#27AE60;">{{ count($answers) }}</strong> dari <strong>{{ $this->questions->count() }}</strong> soal
+            </p>
+            @if($unanswered2 > 0)
+            <div style="background:#FFF3CD;border:1px solid #FFC107;border-radius:8px;padding:8px;font-size:13px;color:#856404;margin-bottom:8px;">
+                ⚠️ {{ $unanswered2 }} soal belum dijawab
+            </div>
+            @else
+            <div style="background:#D5F5E3;border:1px solid #27AE60;border-radius:8px;padding:8px;font-size:13px;color:#1E8449;margin-bottom:8px;">
+                ✅ Semua soal sudah dijawab
+            </div>
+            @endif
+            @else
+            <p style="margin:0 0 10px;font-size:14px;color:#6B7280;">
+                Pastikan kamu sudah submit jawaban di Google Form sebelum mengklik tombol ini.
+            </p>
+            @endif
+        </div>
 
-        <div style="display:flex;gap:0.75rem;justify-content:center;">
-            <button class="btn-digi-outline" wire:click="$set('showSubmitConfirm', false)">Batal</button>
-            <button class="btn-digi-success" wire:click="submit">✅ Ya, Kumpulkan</button>
+        <div style="display:flex;gap:10px;">
+            <button wire:click="$set('showSubmitConfirm', false)"
+                style="flex:1;padding:13px;background:white;border:2px solid #E5E7EB;border-radius:10px;font-size:14px;font-weight:600;color:#374151;cursor:pointer;font-family:inherit;">
+                Batal
+            </button>
+            <button wire:click="submit"
+                style="flex:2;padding:13px;background:#27AE60;border:none;border-radius:10px;font-size:14px;font-weight:700;color:white;cursor:pointer;font-family:inherit;">
+                ✅ Ya, Kumpulkan!
+            </button>
         </div>
     </div>
 </div>
@@ -263,43 +377,49 @@
 {{-- Timer Script --}}
 <script>
 (function() {
-    const endTimestamp = {{ $session->getEndTimestamp() }} * 1000;
+    var endTs = {{ $session->getEndTimestamp() }} * 1000;
 
-    function updateTimer() {
-        const now       = Date.now();
-        const remaining = Math.max(0, Math.floor((endTimestamp - now) / 1000));
-        const hours     = Math.floor(remaining / 3600);
-        const minutes   = Math.floor((remaining % 3600) / 60);
-        const seconds   = remaining % 60;
+    function pad(n) { return String(n).padStart(2, '0'); }
 
-        const display = remaining >= 3600
-            ? `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`
-            : `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+    function tick() {
+        var now  = Date.now();
+        var left = Math.max(0, Math.floor((endTs - now) / 1000));
 
-        const el = document.getElementById('timer-display');
-        if (el) el.textContent = display;
+        var h = Math.floor(left / 3600);
+        var m = Math.floor((left % 3600) / 60);
+        var s = left % 60;
 
-        const timerEl = document.getElementById('exam-timer');
-        if (timerEl) {
-            if (remaining <= 60)       timerEl.className = 'exam-timer danger';
-            else if (remaining <= 300) timerEl.className = 'exam-timer warning';
+        var text = left >= 3600
+            ? pad(h) + ':' + pad(m) + ':' + pad(s)
+            : pad(m) + ':' + pad(s);
+
+        var el = document.getElementById('timer-display');
+        if (el) el.textContent = text;
+
+        var wrap = document.getElementById('exam-timer');
+        if (wrap) {
+            if (left <= 60) {
+                wrap.style.background = 'linear-gradient(135deg,#7B241C,#521810)';
+                wrap.style.animation = 'timerPulse 0.8s infinite alternate';
+            } else if (left <= 300) {
+                wrap.style.background = 'linear-gradient(135deg,#E67E22,#CA6F1E)';
+            }
         }
 
-        if (remaining <= 0) {
-            // Waktu habis — submit otomatis
-            const wireEl = document.querySelector('[wire\\:id]');
+        if (left <= 0) {
+            var wireEl = document.querySelector('[wire\\:id]');
             if (wireEl && typeof Livewire !== 'undefined') {
                 Livewire.find(wireEl.getAttribute('wire:id'))?.call('submit');
             }
             return;
         }
-        setTimeout(updateTimer, 1000);
+        setTimeout(tick, 1000);
     }
-    updateTimer();
+    tick();
 })();
 </script>
 
-{{-- Alpine.js Security Component --}}
+{{-- Alpine Security --}}
 <script>
 function examSecurity(sessionId, isGoogleForm) {
     return {
@@ -309,25 +429,25 @@ function examSecurity(sessionId, isGoogleForm) {
         _violationReported: false,
 
         init() {
-            // Blokir klik kanan & shortcut
+            // Block right click & shortcuts
             document.addEventListener('contextmenu', e => e.preventDefault());
             document.addEventListener('keydown', e => {
-                if ((e.ctrlKey || e.metaKey) && ['c','v','a','p','u'].includes(e.key.toLowerCase())) {
+                if ((e.ctrlKey || e.metaKey) && ['c','v','a','p','u','s'].includes(e.key.toLowerCase())) {
                     e.preventDefault();
                 }
-                if (e.key === 'PrintScreen') e.preventDefault();
+                if (e.key === 'PrintScreen' || e.key === 'F12') e.preventDefault();
             });
 
-            // Deteksi pindah tab
+            // Tab switch detection
             document.addEventListener('visibilitychange', () => {
-                if (document.hidden && !this._violationReported) {
+                if (document.hidden && !this._violationReported && !this._submitted) {
                     this.handleViolation('tab_switch');
                 }
             });
 
-            // Deteksi blur window (pindah aplikasi lain)
+            // Window blur (switching apps)
             window.addEventListener('blur', () => {
-                if (!this._violationReported) {
+                if (!this._violationReported && !this._submitted) {
                     this.handleViolation('window_blur');
                 }
             });
@@ -337,26 +457,26 @@ function examSecurity(sessionId, isGoogleForm) {
             if (this._violationReported || this._submitted) return;
             this._violationReported = true;
 
-            // Tampilkan overlay
+            // Show overlay immediately
             this.showViolationOverlay = true;
 
-            // Panggil Livewire method untuk record violation & lock session
-            const wireEl = document.querySelector('[wire\\:id]');
+            // Call Livewire to record violation & lock session
+            var wireEl = document.querySelector('[wire\\:id]');
             if (wireEl && typeof Livewire !== 'undefined') {
                 Livewire.find(wireEl.getAttribute('wire:id'))
                     ?.call('reportViolationAndLock', type)
                     .catch(() => {});
             }
 
-            // Countdown redirect
-            let secs = 5;
+            // Countdown 5 seconds then redirect
+            var secs = 5;
             this.redirectCountdown = secs;
-            const interval = setInterval(() => {
+            var self = this;
+            var interval = setInterval(function() {
                 secs--;
-                this.redirectCountdown = secs;
+                self.redirectCountdown = secs;
                 if (secs <= 0) {
                     clearInterval(interval);
-                    // Fallback redirect jika Livewire redirect belum jalan
                     window.location.href = '/student/dashboard';
                 }
             }, 1000);
@@ -365,140 +485,35 @@ function examSecurity(sessionId, isGoogleForm) {
 }
 </script>
 
-{{-- CSS --}}
 <style>
 *, *::before, *::after { box-sizing: border-box; }
-body { margin: 0; background: #F3F4F6; font-family: 'Plus Jakarta Sans', sans-serif; }
 
-.exam-container {
-    display: grid;
-    grid-template-columns: 1fr 280px;
-    gap: 1.25rem;
-}
-@media (max-width: 768px) {
-    .exam-container { grid-template-columns: 1fr; }
-    .exam-sidebar-panel { order: -1; }
-}
-
-.exam-question-panel {
-    background: white;
-    border-radius: 1rem;
-    padding: 1.5rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-}
-
-.exam-sidebar-panel {
-    background: white;
-    border-radius: 1rem;
-    padding: 1.25rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    height: fit-content;
-    position: sticky;
-    top: 70px;
-}
-
-.exam-timer {
-    background: linear-gradient(135deg, #C0392B, #922B21);
-    color: white;
-    border-radius: 0.75rem;
-    padding: 1rem;
-    text-align: center;
-    margin-bottom: 1rem;
-}
-.exam-timer.warning { background: linear-gradient(135deg, #E67E22, #CA6F1E); }
-.exam-timer.danger  { background: linear-gradient(135deg, #C0392B, #7B241C); animation: pulse-bg 1s infinite; }
-
-@keyframes pulse-bg {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.85; }
-}
-
-.exam-timer-value {
-    font-size: 2rem;
-    font-weight: 800;
-    font-family: 'SF Mono', 'Courier New', monospace;
-    letter-spacing: 2px;
-}
-
-.option-btn {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    text-align: left;
-    padding: 12px 14px;
-    border: 1.5px solid #E5E7EB;
-    border-radius: 0.625rem;
-    background: white;
-    cursor: pointer;
-    margin-bottom: 8px;
-    font-size: 14px;
-    color: #374151;
-    transition: all 0.15s;
-}
-.option-btn:hover:not(.selected) { border-color: #C0392B; background: #FDEDEC; }
-.option-btn.selected { border-color: #C0392B; background: rgba(192,57,43,0.06); color: #C0392B; font-weight: 600; }
-
-.option-circle {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    border: 1.5px solid currentColor;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 13px;
-    flex-shrink: 0;
-}
-.option-btn.selected .option-circle { background: #C0392B; border-color: #C0392B; color: white; }
-
-.question-number-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 5px;
-}
-
-.q-num-btn {
-    aspect-ratio: 1;
-    border-radius: 0.375rem;
-    border: 1px solid #E5E7EB;
-    background: white;
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    color: #9CA3AF;
-    transition: all 0.1s;
-}
-.q-num-btn.answered { background: #D5F5E3; border-color: #27AE60; color: #1E8449; }
-.q-num-btn.current  { background: #C0392B; border-color: #C0392B; color: white; }
-
-.btn-digi-primary {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: #C0392B; color: white; border: none;
-    border-radius: 0.5rem; padding: 10px 18px;
-    font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
-}
-.btn-digi-outline {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: white; color: #374151; border: 1.5px solid #E5E7EB;
-    border-radius: 0.5rem; padding: 10px 18px;
-    font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
-}
-.btn-digi-success {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: #27AE60; color: white; border: none;
-    border-radius: 0.5rem; padding: 10px 18px;
-    font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
-}
-.btn-digi-primary:disabled,
-.btn-digi-success:disabled { opacity: 0.6; cursor: not-allowed; }
-
-.google-form-iframe {
-    width: 100%; border: none; border-radius: 0.75rem; min-height: 600px;
+@keyframes timerPulse {
+    from { opacity: 1; }
+    to   { opacity: 0.7; }
 }
 
 [x-cloak] { display: none !important; }
+
+/* Button classes */
+.btn-digi-success {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #27AE60; color: white; border: none;
+    border-radius: 10px; padding: 11px 18px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    font-family: inherit; -webkit-appearance: none;
+}
+.btn-digi-success:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Mobile responsive breakpoints */
+@media (min-width: 640px) {
+    /* On tablet/desktop, show two-column layout */
+    .exam-two-col {
+        display: grid;
+        grid-template-columns: 1fr 280px;
+        gap: 16px;
+    }
+}
 </style>
 
 </div>

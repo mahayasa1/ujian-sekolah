@@ -96,6 +96,12 @@
                     onfocus="this.style.borderColor='#C0392B'" onblur="this.style.borderColor='#E5E7EB'">
             </div>
             <div>
+                <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:6px;">NISN <span style="color:#9CA3AF;font-weight:400;">(opsional)</span></label>
+                <input type="text" wire:model="nisn" placeholder="Nomor Induk Siswa Nasional"
+                    style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;"
+                    onfocus="this.style.borderColor='#C0392B'" onblur="this.style.borderColor='#E5E7EB'">
+            </div>
+            <div style="grid-column:1/-1;">
                 <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:6px;">Kelas</label>
                 <select wire:model="classRoomId"
                     style="width:100%;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;background:white;font-family:inherit;outline:none;">
@@ -126,12 +132,12 @@
     </div>
 
     <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
-        <table style="width:100%;border-collapse:collapse;min-width:520px;">
+        <table style="width:100%;border-collapse:collapse;min-width:600px;">
             <thead>
                 <tr>
                     <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:#6B7280;background:#F9FAFB;border-bottom:1px solid #F3F4F6;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;">Pengguna</th>
                     <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:#6B7280;background:#F9FAFB;border-bottom:1px solid #F3F4F6;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;width:70px;">Role</th>
-                    <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:#6B7280;background:#F9FAFB;border-bottom:1px solid #F3F4F6;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;width:130px;">Info Tambahan</th>
+                    <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:#6B7280;background:#F9FAFB;border-bottom:1px solid #F3F4F6;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;width:160px;">Info Tambahan</th>
                     <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:#6B7280;background:#F9FAFB;border-bottom:1px solid #F3F4F6;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;width:80px;">Bergabung</th>
                     <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:#6B7280;background:#F9FAFB;border-bottom:1px solid #F3F4F6;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;width:90px;">Aksi</th>
                 </tr>
@@ -159,12 +165,13 @@
                             <span style="background:#D5F5E3;color:#1E8449;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap;">Siswa</span>
                         @endif
                     </td>
-                    <td style="padding:10px 14px;font-size:12px;color:#6B7280;">
+                    <td style="padding:10px 14px;font-size:12px;color:#6B7280;line-height:1.6;">
                         @if($user->role === 'guru' && $user->teacher)
-                            NIP: {{ $user->teacher->nip ?? '-' }}
+                            <div>NIP: {{ $user->teacher->nip ?? '-' }}</div>
                         @elseif($user->role === 'siswa' && $user->student)
-                            NIS: {{ $user->student->nis ?? '-' }}<br>
-                            <span style="font-weight:600;color:#374151;">{{ $user->student->classRoom?->name ?? '-' }}</span>
+                            <div>NIS: {{ $user->student->nis ?? '-' }}</div>
+                            <div>NISN: {{ $user->student->nisn ?? '-' }}</div>
+                            <div><span style="font-weight:600;color:#374151;">{{ $user->student->classRoom?->name ?? '-' }}</span></div>
                         @else
                             —
                         @endif

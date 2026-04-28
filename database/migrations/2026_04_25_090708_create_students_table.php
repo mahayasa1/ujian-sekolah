@@ -11,6 +11,7 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('nis')->unique()->nullable();
+            $table->string('nisn', 20)->nullable()->unique();
             $table->foreignId('class_room_id')->nullable()->constrained()->nullOnDelete();
             $table->timestamps();
         });
