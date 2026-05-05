@@ -33,6 +33,12 @@ class ExamManager extends Component
             ->latest()->get();
     }
 
+    public function create()
+    {
+        $this->resetForm();
+        $this->showForm = true;
+    }
+
     public function save()
     {
         $this->validate([
@@ -41,30 +47,55 @@ class ExamManager extends Component
             'classRoomId'   => 'nullable|integer',
             'googleFormUrl' => 'nullable|url|max:1000',
         ]);
-
-        $token = strtoupper(Str::random(6));
-
-        Exam::updateOrCreate(
-            ['id' => $this->editId],
-            [
+    
+        if ($this->editId) {
+    
+            // ✅ UPDATE
+            $exam = Exam::findOrFail($this->editId);
+    
+            $exam->update([
+                'title'           => $this->title,
+                'class_room_id'   => $this->classRoomId ?: null,
+                'duration'        => $this->duration,
+                'start_at'        => $this->startAt ?: null,
+                'end_at'          => $this->endAt ?: null,
+                'google_form_url' => $this->googleFormUrl ?: null,
+            ]);
+    
+        } else {
+    
+            // ✅ CREATE
+            Exam::create([
                 'title'           => $this->title,
                 'subject_id'      => $this->subjectId,
                 'class_room_id'   => $this->classRoomId ?: null,
                 'duration'        => $this->duration,
                 'start_at'        => $this->startAt ?: null,
                 'end_at'          => $this->endAt ?: null,
-                'token'           => $this->editId
-                    ? (Exam::find($this->editId)?->token ?? $token)
-                    : $token,
+                'token'           => strtoupper(Str::random(6)),
                 'google_form_url' => $this->googleFormUrl ?: null,
                 'created_by'      => auth()->id(),
-            ]
-        );
-
-        $this->reset(['showForm', 'editId', 'title', 'googleFormUrl', 'startAt', 'endAt']);
-        $this->duration     = 90;
-        $this->classRoomId  = 0;
+            ]);
+        }
+    
+        $this->resetForm();
+    
         session()->flash('success', 'Ujian berhasil disimpan.');
+    }
+
+    public function resetForm()
+    {
+        $this->reset([
+            'showForm',
+            'editId',
+            'title',
+            'googleFormUrl',
+            'startAt',
+            'endAt',
+        ]);
+    
+        $this->duration = 90;
+        $this->classRoomId = 0;
     }
 
     public function edit(int $examId)

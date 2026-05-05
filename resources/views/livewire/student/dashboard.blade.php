@@ -62,14 +62,26 @@
     @endphp
 
     @if($isDone)
-        <a href="{{ route('student.result', $session->id) }}"
-           style="background:white;border-radius:12px;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.08);cursor:pointer;padding:12px 8px;text-align:center;text-decoration:none;gap:6px;position:relative;">
-            <div style="position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:#34C759;"></div>
-            <div style="font-size:28px;line-height:1;">{{ $icon }}</div>
-            <div style="font-size:11px;font-weight:600;color:#1C1C1E;line-height:1.2;">{{ Str::limit($exam->subject->name, 10) }}</div>
-            <div style="font-size:9px;color:#8E8E93;line-height:1.2;text-align:center;">{{ Str::limit($exam->title, 12) }}</div>
-            <div style="font-size:10px;color:#34C759;font-weight:700;">{{ $session->score ?? '-' }}</div>
-        </a>
+    <button
+        onclick="showDoneAlert()"
+        style="background:#F9FAFB;border-radius:12px;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.08);cursor:not-allowed;padding:12px 8px;text-align:center;gap:6px;position:relative;border:1px solid #E5E7EB;width:100%;opacity:0.7;">
+        
+        <div style="position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:#9CA3AF;"></div>
+
+        <div style="font-size:28px;line-height:1;">{{ $icon }}</div>
+
+        <div style="font-size:11px;font-weight:600;color:#6B7280;line-height:1.2;">
+            {{ Str::limit($exam->subject->name, 10) }}
+        </div>
+
+        <div style="font-size:9px;color:#9CA3AF;line-height:1.2;text-align:center;">
+            {{ Str::limit($exam->title, 12) }}
+        </div>
+
+        <div style="font-size:10px;color:#6B7280;font-weight:600;">
+            Selesai
+        </div>
+    </button>
 
     @elseif($isLocked)
         <button wire:click="selectExam({{ $exam->id }})"
@@ -116,16 +128,15 @@
     <div style="font-size:17px;font-weight:600;color:#1C1C1E;margin-bottom:12px;">Riwayat Ujian</div>
     <div style="background:white;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08);overflow:hidden;">
         @foreach($completedSessions as $ses)
-        <a href="{{ route('student.result', $ses->id) }}"
-           style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:0.5px solid #E5E5EA;text-decoration:none;color:inherit;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:0.5px solid #E5E5EA;text-decoration:none;color:inherit;">
             <div style="flex:1;min-width:0;">
                 <div style="font-size:14px;font-weight:600;color:#1C1C1E;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $ses->exam->title }}</div>
                 <div style="font-size:12px;color:#8E8E93;">{{ $ses->exam->subject->name }} · {{ $ses->submitted_at?->format('d M Y') }}</div>
             </div>
-            <div style="font-size:20px;font-weight:700;color:{{ ($ses->score ?? 0) >= 75 ? '#34C759' : '#C0392B' }};margin-left:12px;flex-shrink:0;">
+            {{-- <div style="font-size:20px;font-weight:700;color:{{ ($ses->score ?? 0) >= 75 ? '#34C759' : '#C0392B' }};margin-left:12px;flex-shrink:0;">
                 {{ $ses->score ?? '-' }}
-            </div>
-        </a>
+            </div> --}}
+        </div>
         @endforeach
     </div>
 </div>
@@ -241,5 +252,16 @@
 <style>
 @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
 </style>
+
+<script>
+function showDoneAlert() {
+    Swal.fire({
+        icon: 'info',
+        title: 'Ujian Selesai',
+        text: 'Ujian ini sudah dikerjakan',
+        confirmButtonColor: '#C0392B'
+    });
+}
+</script>
 
 </div>

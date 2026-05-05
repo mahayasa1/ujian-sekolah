@@ -4,7 +4,7 @@
 {{-- Toolbar --}}
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.75rem;">
     <span style="font-size:0.8rem;color:#6B7280;">{{ $this->exams->count() }} ujian</span>
-    <button class="btn-digi-primary" wire:click="$set('showForm', true)" style="font-size:13px;padding:8px 14px;">
+    <button class="btn-digi-primary" wire:click="create" style="font-size:13px;padding:8px 14px;">
         + Buat Ujian Baru
     </button>
 </div>

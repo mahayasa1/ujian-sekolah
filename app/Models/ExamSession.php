@@ -31,89 +31,91 @@ class ExamSession extends Model
     }
 
     /**
-     * Hitung sisa waktu dalam detik.
-     *
-     * DUA MODE:
-     *
-     * Mode A — Normal (belum pernah violation):
-     *   remaining = total_durasi - (now - started_at)
-     *
-     * Mode B — Setelah violation/re-entry (ada remaining_seconds):
-     *   remaining = remaining_seconds - (now - last_violation_at)
-     *
-     *   last_violation_at di-update DUA kali:
-     *     1. Saat violation terjadi   → snapshot waktu tersisa ke remaining_seconds
-     *     2. Saat re-entry berhasil   → reset basis agar timer lanjut dari titik re-entry
-     *
-     *   Dengan ini, setiap refresh halaman akan menghitung:
-     *     elapsed = now - last_violation_at (= sejak siswa masuk kembali)
-     *     sisa    = remaining_seconds - elapsed  ✓ BENAR
+     * 🔥 CORE TIMER (FIX FINAL)
      */
     public function getTimeLeftSeconds(): int
     {
         if (!$this->started_at) return 0;
-    
-        // Pakai ends_at absolut jika ada
-        if ($this->ends_at) {
-            $diff = now()->diffInSeconds($this->ends_at, false);
-            return max(0, (int) $diff);
+
+        // ✅ MODE: setelah violation (freeze system)
+        if ($this->remaining_seconds !== null && $this->last_violation_at) {
+
+            // ❗ HARUS pakai timestamp, bukan diffInSeconds
+            $elapsed = now()->timestamp - $this->last_violation_at->timestamp;
+
+            return max(0, $this->remaining_seconds - $elapsed);
         }
-    
-        // Normal: hitung dari started_at
+
+        // ✅ MODE: normal
         $totalSeconds = $this->exam->duration * 60;
-        $elapsed = (int) now()->diffInSeconds($this->started_at);
+
+        // ❗ FIX: pakai timestamp juga
+        $elapsed = max(0, now()->timestamp - $this->started_at->timestamp);
+
         return max(0, $totalSeconds - $elapsed);
     }
-    
+
+    /**
+     * Untuk JS timer (frontend)
+     */
     public function getEndTimestamp(): int
     {
+        // Kalau sudah pernah diset, pakai itu
         if ($this->ends_at) {
             return $this->ends_at->timestamp;
         }
-        return now()->addSeconds($this->getTimeLeftSeconds())->timestamp;
+
+        // Kalau belum, generate SEKALI
+        $end = $this->started_at->copy()->addMinutes($this->exam->duration);
+
+        // Simpan ke DB supaya FIX
+        $this->update(['ends_at' => $end]);
+
+        return $end->timestamp;
     }
-    
+
     /**
-     * Saat violation: snapshot sisa waktu sebagai ends_at absolut
-     * ends_at = now + sisa_waktu → FREEZE di titik ini
+     * 🔒 Saat violation → FREEZE waktu
      */
     public function snapshotRemainingTime(): void
     {
+        // ❗ Jangan overwrite kalau sudah pernah snapshot
+        if ($this->reentry_token) return;
+
         $secondsLeft = $this->getTimeLeftSeconds();
+
         $this->update([
             'remaining_seconds' => $secondsLeft,
             'last_violation_at' => now(),
-            'ends_at'           => now()->addSeconds($secondsLeft), // ← FREEZE
-        ]);
-    }
-    
-    /**
-     * Saat re-entry: ends_at TIDAK berubah
-     * Timer lanjut dari ends_at yang sudah di-freeze
-     */
-    public function processReentry(): void
-    {
-        $this->update([
-            'reentry_token' => null,
-            // ends_at tetap, last_violation_at tidak perlu di-update
+            'ends_at'           => null, // ❗ disable old logic
         ]);
     }
 
     /**
-     * Generate dan simpan reentry token baru.
+     * 🔓 Saat re-entry → lanjutkan timer
+     */
+    public function processReentry(): void
+    {
+        $this->update([
+            'reentry_token'     => null,
+            'last_violation_at' => now(), // ❗ RESET basis waktu
+        ]);
+    }
+
+    /**
+     * 🔑 Generate token
      */
     public function generateReentryToken(): string
     {
         $token = strtoupper(
             substr(md5($this->id . '-' . $this->student_id . '-' . Str::random(16)), 0, 8)
         );
+
         $this->update(['reentry_token' => $token]);
+
         return $token;
     }
 
-    /**
-     * @deprecated Pakai processReentry() agar last_violation_at juga diupdate.
-     */
     public function clearReentryToken(): void
     {
         $this->update(['reentry_token' => null]);
