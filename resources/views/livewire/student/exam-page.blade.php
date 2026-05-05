@@ -417,13 +417,14 @@
 {{-- Timer Script --}}
 <script>
 (function() {
+    // ends_at dari server adalah timestamp absolut yang sudah di-freeze
+    // Tidak akan berubah meski Livewire re-render karena ends_at di DB tidak berubah
     var endTs = {{ $session->getEndTimestamp() }} * 1000;
 
     function pad(n) { return String(n).padStart(2, '0'); }
 
     function tick() {
-        var now  = Date.now();
-        var left = Math.max(0, Math.floor((endTs - now) / 1000));
+        var left = Math.max(0, Math.floor((endTs - Date.now()) / 1000));
 
         var h = Math.floor(left / 3600);
         var m = Math.floor((left % 3600) / 60);
@@ -603,6 +604,10 @@ function examSecurity(sessionId, isGoogleForm) {
         }
     };
 }
+
+    window.addEventListener('exam-submitted', function(e) {
+        localStorage.removeItem('exam_end_' + e.detail.sessionId);
+    });
 </script>
 
 <style>

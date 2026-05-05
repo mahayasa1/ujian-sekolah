@@ -16,7 +16,8 @@ return new class extends Migration {
             $table->enum('status', ['belum', 'aktif', 'selesai'])->default('belum');
             $table->string('reentry_token', 32)->nullable();
             $table->timestamp('last_violation_at')->nullable();
-             $table->integer('remaining_seconds')->nullable();
+            $table->integer('remaining_seconds')->nullable();
+            $table->timestamp('ends_at')->nullable();
             $table->integer('score')->nullable();
             $table->timestamps();
         });

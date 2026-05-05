@@ -113,13 +113,15 @@ class ExamPage extends Component
         if (!$this->session->exam->google_form_url) {
             $this->autoScore();
         }
-
+    
         $this->session->update([
             'status'        => 'selesai',
             'submitted_at'  => now(),
             'reentry_token' => null,
         ]);
-
+    
+        $this->dispatch('exam-submitted', sessionId: $this->session->id);
+        
         return $this->redirect(route('student.result', $this->session->id), navigate: true);
     }
 
