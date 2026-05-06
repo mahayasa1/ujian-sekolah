@@ -13,126 +13,151 @@
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif; background: #F2F2F7; min-height: 100vh; }
+
+        .header {
+            background: linear-gradient(135deg, #C0392B 0%, #7B1A10 60%, #5C0E08 100%);
+            height: 70px;
+            display: flex;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        
+        .header-inner {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            gap: 8px;
+            padding: 0 12px;
+        }
+        
+        /* LOGO */
+        .logo-left img {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+        }
+        
+        .logo-right img {
+            width: 48px;
+            height: 48px;
+            object-fit: cover;
+        }
+        
+        /* BRAND */
+        .brand {
+            flex: 1;
+            text-align: center;
+            min-width: 0;
+        }
+        
+        .brand-top {
+            font-size: 11px;
+            color: rgba(255,255,255,0.9);
+            font-weight: 500;
+        }
+        
+        .brand-main {
+            font-size: 18px;
+            font-weight: 800;
+            color: white;
+            line-height: 1.1;
+        }
+        
+        /* USER */
+        .user-area button {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.35);
+            color: white;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        
+        /* ===== RESPONSIVE ===== */
+        
+        /* Tablet */
+        @media (min-width: 640px) {
+            .logo-left img {
+                width: 60px;
+                height: 60px;
+            }
+        
+            .logo-right img {
+                width: 58px;
+                height: 58px;
+            }
+        
+            .brand-main {
+                font-size: 20px;
+            }
+        
+            .brand-top {
+                font-size: 12px;
+            }
+        }
+        
+        /* Desktop */
+        @media (min-width: 1024px) {
+            .header {
+                height: 80px;
+            }
+        
+            .logo-left img {
+                width: 70px;
+                height: 70px;
+            }
+        
+            .logo-right img {
+                width: 68px;
+                height: 68px;
+            }
+        
+            .brand-main {
+                font-size: 22px;
+            }
+        
+            .brand-top {
+                font-size: 13px;
+            }
+        }
     </style>
 </head>
 <body>
 
 {{-- HEADER --}}
-<header style="
-    background: linear-gradient(135deg, #C0392B 0%, #7B1A10 60%, #5C0E08 100%);
-    padding: 0 16px;
-    height: 70px;
-    display: flex;
-    align-items: center;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    overflow: visible;
-">
-    <div style="display:flex;align-items:center;width:100%;gap:12px;height:100%;">
+<header class="header">
+    <div class="header-inner">
 
-        {{-- Logo Kiri (Tabanan) — lebih besar, overflow ke atas --}}
-        <div style="
-            flex-shrink: 0;
-            position: relative;
-            width: 72px;
-            height: 86px;
-            margin-top: -16px;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-        ">
-            <img
-                src="/images/logo_2.png"
-                alt="Logo Kabupaten Tabanan"
-                style="
-                    width: 66px;
-                    height: 66px;
-                    object-fit: contain;
-                    margin-bottom: 1px;
-                "
-            >
+        {{-- Logo Kiri --}}
+        <div class="logo-left">
+            <img src="/images/logo_2.png" alt="Logo Kabupaten Tabanan">
         </div>
 
-        {{-- Brand — teks tengah --}}
-        <div style="flex:1;min-width:0;text-align:center;">
-            <div style="
-                font-size: 13px;
-                color: rgba(255,255,255,0.92);
-                font-weight: 500;
-                line-height: 1.3;
-                letter-spacing: 0.2px;
-                margin-bottom: 2px;
-            ">SMP Negeri 1 Selemadeg</div>
-            <div style="
-                font-size: 22px;
-                font-weight: 800;
-                color: #FFFFFF;
-                line-height: 1.1;
-                letter-spacing: -0.3px;
-                text-shadow: 0 1px 3px rgba(0,0,0,0.3);
-            ">DigiTest SELSA</div>
+        {{-- Brand --}}
+        <div class="brand">
+            <div class="brand-top">SMP Negeri 1 Selemadeg</div>
+            <div class="brand-main">DigiTest SELSA</div>
         </div>
 
-        {{-- Logo Kanan (SMPN1) — lebih kecil, bulat --}}
-        <div style="flex-shrink:0;">
-            <img
-                src="/images/logo_1.png"
-                alt="Logo SMP Negeri 1 Selemadeg"
-                style="
-                    width: 72px;
-                    height: 72px;
-                    object-fit: cover;
-                "
-            >
+        {{-- Logo Kanan --}}
+        <div class="logo-right">
+            <img src="/images/logo_1.png" alt="Logo SMP Negeri 1 Selemadeg">
         </div>
 
-        {{-- User info + logout (compact, hanya muncul saat auth) --}}
+        {{-- User --}}
         @auth
-        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;border-left:1px solid rgba(255,255,255,0.2);padding-left:10px;">
-            <div style="text-align:right;display:none;" class="user-info-desktop">
-                <div style="font-size:11px;font-weight:600;color:white;line-height:1.2;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                    {{ auth()->user()->name }}
-                </div>
-                <div style="font-size:10px;color:rgba(255,255,255,0.75);line-height:1.2;">
-                    {{ ucfirst(auth()->user()->role) }}
-                    @if(auth()->user()->isSiswa() && auth()->user()->student?->classRoom)
-                        · {{ auth()->user()->student->classRoom->name }}
-                    @endif
-                </div>
-            </div>
-            {{-- <div style="
-                width: 30px;
-                height: 30px;
-                border-radius: 50%;
-                background: rgba(255,255,255,0.2);
-                border: 1.5px solid rgba(255,255,255,0.5);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 11px;
-                font-weight: 700;
-                color: white;
-                flex-shrink: 0;
-            ">{{ auth()->user()->initials() }}</div> --}}
-            <form method="POST" action="{{ route('logout') }}" style="flex-shrink:0;">
+        <div class="user-area">
+            <form method="POST" action="{{ route('logout') }}">
                 @csrf
-                <button type="submit" style="
-                    background: rgba(255,255,255,0.15);
-                    border: 1px solid rgba(255,255,255,0.35);
-                    color: white;
-                    font-size: 10px;
-                    font-weight: 600;
-                    padding: 4px 8px;
-                    border-radius: 6px;
-                    cursor: pointer;
-                    font-family: inherit;
-                    white-space: nowrap;
-                ">Keluar</button>
+                <button type="submit">Keluar</button>
             </form>
         </div>
         @endauth
+
     </div>
 </header>
 
