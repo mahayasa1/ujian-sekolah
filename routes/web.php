@@ -1,4 +1,5 @@
 <?php
+// routes/web.php
 
 use Illuminate\Support\Facades\Route;
 use App\Models\Subject;
@@ -26,7 +27,7 @@ Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->gr
 
     Route::get('/exam/{session}', \App\Livewire\Student\ExamPage::class)->name('exam');
 
-Route::get('/result/{session}', \App\Livewire\Student\Result::class)->name('result');
+    Route::get('/result/{session}', \App\Livewire\Student\Result::class)->name('result');
 
     Route::get('/results', function () {
         $student  = auth()->user()->student;
@@ -62,26 +63,30 @@ Route::middleware(['auth', 'verified'])->prefix('teacher')->name('teacher.')->gr
 // ADMIN ROUTES
 // ============================================================
 Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
+
+    // Dashboard
     Route::get('/dashboard', \App\Livewire\Admin\Dashboard::class)->name('dashboard');
-    Route::get('/users', \App\Livewire\Admin\Users::class)->name('users');
+
+    // ── Guru (dedicated page) ────────────────────────────────
+    Route::get('/teachers', \App\Livewire\Admin\Teachers::class)->name('teachers');
+
+    // ── Siswa (dedicated page) ───────────────────────────────
+    Route::get('/students', \App\Livewire\Admin\Students::class)->name('students');
+
+    // ── Mata Pelajaran ───────────────────────────────────────
     Route::get('/subjects', \App\Livewire\Admin\Subjects::class)->name('subjects');
-    Route::get('/classes', \App\Livewire\Admin\Classes::class)->name('classes');
 
-    // Data Guru — tampil list user role guru
-    Route::get('/data-guru', function () {
-        $teachers = \App\Models\Teacher::with('user')->latest()->get();
-        return view('livewire.admin.data_guru', compact('teachers'))
-            ->layout('components.layouts.digitest', ['title' => 'Data Guru']);
-    })->name('data_guru');
+    // ── Kelas ────────────────────────────────────────────────
+    // Route::get('/classes', \App\Livewire\Admin\Classes::class)->name('classes');
 
-    // Data Siswa — tampil list siswa saja tanpa pilihan role
-    Route::get('/data-siswa', function () {
-        $students = \App\Models\Student::with(['user', 'classRoom'])
-            ->latest()
-            ->paginate(20);
-        return view('livewire.admin.data_siswa', compact('students'))
-            ->layout('components.layouts.digitest', ['title' => 'Data Siswa']);
-    })->name('data_siswa');
+    // ── Users (general, kept for backward compat) ────────────
+    Route::get('/users', \App\Livewire\Admin\Users::class)->name('users');
+
+    // ── Legacy data-guru redirect ────────────────────────────
+    Route::redirect('/data-guru',  '/admin/teachers')->name('data_guru');
+
+    // ── Legacy data-siswa redirect ───────────────────────────
+    Route::redirect('/data-siswa', '/admin/students')->name('data_siswa');
 });
 
 require __DIR__.'/settings.php';
