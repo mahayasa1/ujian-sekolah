@@ -13,10 +13,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'role' => \App\Http\Middleware\EnsureUserHasRole::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (AuthenticationException $e, Request $request) {
-            return redirect('/');
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $e->getMessage()], 401);
+            }
+
+            return redirect()->guest(route('login'));
         });
     })->create();

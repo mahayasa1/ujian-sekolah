@@ -21,7 +21,7 @@ Route::middleware(['auth', 'verified'])->get('/dashboard', function () {
 // ============================================================
 // STUDENT ROUTES
 // ============================================================
-Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:siswa'])->prefix('student')->name('student.')->group(function () {
 
     Route::get('/dashboard', \App\Livewire\Student\Dashboard::class)->name('dashboard');
 
@@ -44,7 +44,7 @@ Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->gr
 // ============================================================
 // TEACHER ROUTES
 // ============================================================
-Route::middleware(['auth', 'verified'])->prefix('teacher')->name('teacher.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:guru,admin'])->prefix('teacher')->name('teacher.')->group(function () {
 
     Route::get('/dashboard', \App\Livewire\Teacher\Dashboard::class)->name('dashboard');
 
@@ -62,7 +62,7 @@ Route::middleware(['auth', 'verified'])->prefix('teacher')->name('teacher.')->gr
 // ============================================================
 // ADMIN ROUTES
 // ============================================================
-Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
 
     // Dashboard
     Route::get('/dashboard', \App\Livewire\Admin\Dashboard::class)->name('dashboard');
@@ -77,7 +77,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('/subjects', \App\Livewire\Admin\Subjects::class)->name('subjects');
 
     // ── Kelas ────────────────────────────────────────────────
-    // Route::get('/classes', \App\Livewire\Admin\Classes::class)->name('classes');
+    Route::get('/classes', \App\Livewire\Admin\Classes::class)->name('classes');
 
     // ── Users (general, kept for backward compat) ────────────
     Route::get('/users', \App\Livewire\Admin\Users::class)->name('users');

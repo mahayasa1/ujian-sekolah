@@ -48,10 +48,16 @@
 
     <!-- GOOGLE FORM -->
     <div style="position:relative;z-index:1;">
+        @if($session->exam->google_form_url)
         <iframe
             src="{{ $session->exam->google_form_url . (str_contains($session->exam->google_form_url, '?') ? '&' : '?') . 'embedded=true' }}"
             style="width:100%;border:none;border-radius:12px;min-height:75vh;"
         ></iframe>
+        @else
+        <div style="background:white;border-radius:12px;padding:24px;text-align:center;color:#6B7280;font-size:14px;">
+            ⚠️ Link Google Form untuk ujian ini belum diatur oleh guru.
+        </div>
+        @endif
     </div>
 
     <!-- SUBMIT -->
@@ -80,19 +86,9 @@
             <h2 style="margin:0 0 6px;font-size:18px;font-weight:800;color:#1F2937;">Kumpulkan Jawaban?</h2>
 
             @if(!$session->exam->google_form_url)
-            @php $unanswered2 = $this->questions->count() - count($answers); @endphp
-            <p style="margin:0 0 6px;font-size:14px;color:#6B7280;">
-                Terjawab: <strong style="color:#27AE60;">{{ count($answers) }}</strong> dari <strong>{{ $this->questions->count() }}</strong> soal
-            </p>
-            @if($unanswered2 > 0)
             <div style="background:#FFF3CD;border:1px solid #FFC107;border-radius:8px;padding:8px;font-size:13px;color:#856404;margin-bottom:8px;">
-                ⚠️ {{ $unanswered2 }} soal belum dijawab
+                ⚠️ Link Google Form untuk ujian ini belum diatur oleh guru. Hubungi guru mata pelajaran sebelum mengumpulkan jawaban.
             </div>
-            @else
-            <div style="background:#D5F5E3;border:1px solid #27AE60;border-radius:8px;padding:8px;font-size:13px;color:#1E8449;margin-bottom:8px;">
-                ✅ Semua soal sudah dijawab
-            </div>
-            @endif
             @else
             <p style="margin:0 0 10px;font-size:14px;color:#6B7280;">
                 Pastikan kamu sudah submit jawaban di Google Form sebelum mengklik tombol ini.
