@@ -43,21 +43,24 @@ class Students extends Component
     // Paginated student list
     // ----------------------------------------------------------------
     public function getStudentsProperty()
-    {
-        return Student::with(['user', 'classRoom'])
-            ->when($this->search, fn($q) =>
-                $q->whereHas('user', fn($u) =>
+{
+    return Student::with(['user', 'classRoom'])
+        ->when($this->search, fn($q) =>
+            $q->where(function ($query) {
+                $query->whereHas('user', fn($u) =>
                     $u->where('name', 'like', "%{$this->search}%")
                       ->orWhere('email', 'like', "%{$this->search}%")
-                )->orWhere('nis', 'like', "%{$this->search}%")
-                 ->orWhere('nisn', 'like', "%{$this->search}%")
-            )
-            ->when($this->classFilter, fn($q) =>
-                $q->where('class_room_id', $this->classFilter)
-            )
-            ->latest()
-            ->paginate(15);
-    }
+                )
+                ->orWhere('nis', 'like', "%{$this->search}%")
+                ->orWhere('nisn', 'like', "%{$this->search}%");
+            })
+        )
+        ->when($this->classFilter, fn($q) =>
+            $q->where('class_room_id', $this->classFilter)
+        )
+        ->orderBy('id', 'asc')
+        ->paginate(15);
+}
 
     // ----------------------------------------------------------------
     // Manual CRUD
@@ -233,44 +236,64 @@ class Students extends Component
 
         $inserted = 0;
         $updated  = 0;
-
+        
+        // Cache hash password
+        
         DB::transaction(function () use (&$inserted, &$updated) {
-            foreach ($this->importPreview as $row) {
-                if (empty($row['name']) || empty($row['email'])) continue;
+            
+            // Ambil semua kelas sekali saja
+            $classRooms = ClassRoom::pluck('id', 'name');
+    
 
-                // Resolve class_room_id from kelas name
-                $classRoomId = null;
-                if ($row['kelas'] !== '') {
-                    $class = ClassRoom::where('name', $row['kelas'])->first();
-                    if ($class) $classRoomId = $class->id;
+            foreach ($this->importPreview as $row) {
+
+                if (empty($row['name']) || empty($row['email'])) {
+                    continue;
                 }
 
-                // Upsert User by email
+                // Cari class tanpa query berulang
+                $classRoomId = null;
+
+                if ($row['kelas'] !== '') {
+                    $classRoomId = $classRooms[$row['kelas']] ?? null;
+                    }
+
+                    // Cari user berdasarkan email
                 $user = User::where('email', $row['email'])->first();
 
                 if ($user) {
-                    // Update existing user
+
                     $user->update([
                         'name' => $row['name'],
                         'role' => 'siswa',
                     ]);
+
                     $updated++;
-                } else {
-                    // Create new user
+                    
+                    } else {
+                        
+                    $password = $row['password'] ?: 'password';
+                    $passwordHashes = [];
+
+                    // Hash hanya sekali untuk password yang sama
+                    if (!isset($passwordHashes[$password])) {
+                        $passwordHashes[$password] = Hash::make($password);
+                    }
+
                     $user = User::create([
                         'name'     => $row['name'],
                         'email'    => $row['email'],
-                        'password' => Hash::make($row['password'] ?: 'password'),
+                        'password' => $passwordHashes[$password],
                         'role'     => 'siswa',
                     ]);
+
                     $inserted++;
                 }
 
-                // Upsert Student profile
                 Student::updateOrCreate(
                     ['user_id' => $user->id],
                     [
-                        'nis'           => $row['nis']  ?: null,
+                        'nis'           => $row['nis'] ?: null,
                         'nisn'          => $row['nisn'] ?: null,
                         'class_room_id' => $classRoomId,
                     ]
@@ -284,7 +307,10 @@ class Students extends Component
         $this->importError   = false;
         $this->importMsg     = '';
 
-        session()->flash('success', "Import selesai: {$inserted} siswa baru ditambahkan, {$updated} siswa diperbarui.");
+        session()->flash(
+            'success',
+            "Import selesai: {$inserted} siswa baru ditambahkan, {$updated} siswa diperbarui."
+        );
     }
 
     public function cancelImport()
@@ -294,6 +320,9 @@ class Students extends Component
 
     // ----------------------------------------------------------------
     // Simple XLSX reader (no external library needed)
+    // Reads ALL sheets in the workbook and merges their rows together,
+    // so a file with one sheet per class (e.g. "VII A", "VII B", ...)
+    // gets imported in one go instead of only the first sheet.
     // ----------------------------------------------------------------
     private function readXlsx(string $path): array
     {
@@ -302,7 +331,7 @@ class Students extends Component
             $zip = new \ZipArchive();
             if ($zip->open($path) !== true) return [];
 
-            // Read shared strings
+            // Read shared strings (shared across all sheets)
             $strings = [];
             $sharedXml = $zip->getFromName('xl/sharedStrings.xml');
             if ($sharedXml) {
@@ -320,40 +349,125 @@ class Students extends Component
                 }
             }
 
-            // Read first sheet
-            $sheetXml = $zip->getFromName('xl/worksheets/sheet1.xml');
-            $zip->close();
+            // Resolve every sheet's actual XML file, in workbook order,
+            // via workbook.xml (sheet -> r:id) and workbook.xml.rels (r:id -> target file).
+            $sheetTargets = [];
+            $workbookXml = $zip->getFromName('xl/workbook.xml');
+            $relsXml     = $zip->getFromName('xl/_rels/workbook.xml.rels');
 
-            if (! $sheetXml) return [];
+            if ($workbookXml && $relsXml) {
+                $wb   = simplexml_load_string($workbookXml);
+                $rels = simplexml_load_string($relsXml);
 
-            $xml  = simplexml_load_string($sheetXml);
-            $data = [];
-
-            foreach ($xml->sheetData->row as $row) {
-                $rowData = [];
-                foreach ($row->c as $cell) {
-                    $t   = (string) ($cell['t'] ?? '');
-                    $val = (string) ($cell->v ?? '');
-                    if ($t === 's') {
-                        $val = $strings[(int) $val] ?? '';
-                    }
-                    $rowData[] = $val;
+                $ridToTarget = [];
+                foreach ($rels->Relationship as $rel) {
+                    $ridToTarget[(string) $rel['Id']] = (string) $rel['Target'];
                 }
-                $data[] = $rowData;
+
+                $wb->registerXPathNamespace('r', 'http://schemas.openxmlformats.org/officeDocument/2006/relationships');
+                foreach ($wb->sheets->sheet as $sheet) {
+                    $rid = (string) $sheet->attributes('http://schemas.openxmlformats.org/officeDocument/2006/relationships')['id'];
+                    if (isset($ridToTarget[$rid])) {
+                        $target = $ridToTarget[$rid];
+                        // Targets are relative to xl/, e.g. "worksheets/sheet1.xml"
+                        $sheetTargets[] = 'xl/' . ltrim($target, '/');
+                    }
+                }
             }
 
-            if (empty($data)) return [];
-
-            $header = array_map('strtolower', array_map('trim', $data[0]));
-            for ($i = 1; $i < count($data); $i++) {
-                if (count($data[$i]) < 2) continue;
-                $rows[] = array_combine($header, array_pad($data[$i], count($header), ''));
+            // Fallback: no workbook/rels info available — assume single sheet1.xml
+            if (empty($sheetTargets)) {
+                $sheetTargets = ['xl/worksheets/sheet1.xml'];
             }
+
+            foreach ($sheetTargets as $target) {
+                $sheetXml = $zip->getFromName($target);
+                if (! $sheetXml) continue;
+
+                $sheetRows = $this->parseSheetRows($sheetXml, $strings);
+                if (empty($sheetRows)) continue;
+
+                // Each sheet has its own header row (first row of that sheet).
+                $header = array_map('strtolower', array_map('trim', $sheetRows[0]));
+                for ($i = 1; $i < count($sheetRows); $i++) {
+                    if (count($sheetRows[$i]) < 2) continue;
+                    $rows[] = array_combine($header, array_pad($sheetRows[$i], count($header), ''));
+                }
+            }
+
+            $zip->close();
         } catch (\Throwable $e) {
             // fallback — return empty
         }
 
         return $rows;
+    }
+
+    /**
+     * Parse a single worksheet XML string into an array of row-arrays
+     * (each row is a plain numeric-indexed array of cell values, gaps
+     * from skipped blank cells filled with empty strings).
+     */
+    private function parseSheetRows(string $sheetXml, array $strings): array
+    {
+        $xml  = simplexml_load_string($sheetXml);
+        $data = [];
+
+        foreach ($xml->sheetData->row as $row) {
+            $rowData = [];
+            foreach ($row->c as $cell) {
+                $t   = (string) ($cell['t'] ?? '');
+                $val = (string) ($cell->v ?? '');
+                if ($t === 's') {
+                    $val = $strings[(int) $val] ?? '';
+                }
+
+                // Cells with no value (e.g. blank/optional columns) are omitted
+                // entirely from the XML by Excel — not written as empty cells.
+                // We must use the cell reference (e.g. "F2") to figure out its
+                // real column index, otherwise every column after a blank one
+                // shifts left and gets mismatched with the wrong header.
+                $ref = (string) ($cell['r'] ?? '');
+                preg_match('/^([A-Z]+)/', $ref, $m);
+                $colIndex = $m[1] ?? null;
+
+                if ($colIndex !== null) {
+                    $rowData[$this->columnLetterToIndex($colIndex)] = $val;
+                } else {
+                    // Fallback: no reference available, append sequentially.
+                    $rowData[] = $val;
+                }
+            }
+
+            if (! empty($rowData)) {
+                // Fill any missing gaps (skipped blank cells) with empty strings.
+                ksort($rowData);
+                $maxIndex = max(array_keys($rowData));
+                $filled = [];
+                for ($i = 0; $i <= $maxIndex; $i++) {
+                    $filled[] = $rowData[$i] ?? '';
+                }
+                $rowData = $filled;
+            }
+
+            $data[] = $rowData;
+        }
+
+        return $data;
+    }
+
+    /**
+     * Convert an Excel column letter (A, B, ..., Z, AA, AB, ...) to a
+     * zero-based numeric index (A=0, B=1, ..., Z=25, AA=26, ...).
+     */
+    private function columnLetterToIndex(string $letters): int
+    {
+        $index = 0;
+        foreach (str_split(strtoupper($letters)) as $char) {
+            $index = $index * 26 + (ord($char) - ord('A') + 1);
+        }
+
+        return $index - 1;
     }
 
     // ----------------------------------------------------------------
