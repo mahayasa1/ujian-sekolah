@@ -11,10 +11,26 @@ class Classes extends Component
     public ?int $editId = null;
     public string $name = '';
     public string $grade = '';
-
+    public string $sortField     = 'grade';
+    public string $sortDirection = 'asc';
+    
+    public function sortBy(string $field)
+    {
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField     = $field;
+            $this->sortDirection = 'asc';
+        }
+    }
+    
     public function getClassesProperty()
     {
-        return ClassRoom::withCount('students')->orderBy('grade')->orderBy('name')->get();
+        $field = $this->sortField === 'students_count' ? 'students_count' : $this->sortField;
+    
+        return ClassRoom::withCount('students')
+            ->orderBy($field, $this->sortDirection)
+            ->get();
     }
 
     public function save()

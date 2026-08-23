@@ -147,7 +147,14 @@
      MODAL IMPORT EXCEL / CSV
      ============================================================ --}}
 @if($showImport)
-<div style="position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;">
+<div
+    x-data="{}"
+    x-init="
+        $wire.on('import-batch-done', () => {
+            $wire.processImportBatch();
+        });
+    "
+    style="position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;">
     <div style="background:white;border-radius:14px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.25);">
 
         {{-- Header --}}
@@ -195,8 +202,33 @@
                 </div>
             </div>
 
+            {{-- Batch import progress --}}
+            @if($importing || $importCompleted)
+            <div style="margin-bottom:16px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                    <div style="font-size:13px;font-weight:700;color:#374151;">
+                        @if($importCompleted)
+                            ✅ Import selesai
+                        @else
+                            ⏳ Mengimpor siswa...
+                        @endif
+                    </div>
+                    <div style="font-size:12px;color:#6B7280;">{{ $importIndex }} / {{ $importTotal }}</div>
+                </div>
+                <div style="width:100%;height:10px;background:#F3F4F6;border-radius:999px;overflow:hidden;">
+                    <div style="height:100%;background:#27AE60;border-radius:999px;transition:width .3s;width:{{ $importTotal > 0 ? min(100, round($importIndex / $importTotal * 100)) : 0 }}%;"></div>
+                </div>
+                <div style="margin-top:6px;font-size:11px;color:#9CA3AF;">
+                    ✨ {{ $importInserted }} siswa baru &nbsp;•&nbsp; 🔄 {{ $importUpdated }} diperbarui
+                    @if(!$importCompleted)
+                        &nbsp;•&nbsp; diproses {{ $importBatchSize }} siswa per request
+                    @endif
+                </div>
+            </div>
+            @endif
+
             {{-- Upload area --}}
-            @if(empty($importPreview))
+            @if(empty($importPreview) && !$importing && !$importCompleted)
             <div>
                 <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:8px;">Pilih File:</label>
                 <input type="file" wire:model="importFile" accept=".csv,.xlsx,.txt"
@@ -219,7 +251,7 @@
             @endif
 
             {{-- Preview table --}}
-            @if(!empty($importPreview))
+            @if(!empty($importPreview) && !$importing && !$importCompleted)
             <div>
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
                     <div style="font-size:13px;font-weight:700;color:#374151;">Preview Data ({{ count($importPreview) }} baris)</div>
@@ -282,16 +314,23 @@
 
         {{-- Footer --}}
         <div style="display:flex;gap:10px;justify-content:flex-end;padding:14px 20px;border-top:1px solid #F3F4F6;">
+            @if($importCompleted)
             <button wire:click="cancelImport"
-                style="padding:9px 16px;background:white;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-weight:600;color:#374151;cursor:pointer;font-family:inherit;">
+                style="padding:9px 16px;background:#27AE60;border:none;border-radius:8px;font-size:13px;font-weight:700;color:white;cursor:pointer;font-family:inherit;">
+                Tutup
+            </button>
+            @else
+            <button wire:click="cancelImport" @if($importing) disabled @endif
+                style="padding:9px 16px;background:white;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-weight:600;color:#374151;cursor:pointer;font-family:inherit;{{ $importing ? 'opacity:.5;cursor:not-allowed;' : '' }}">
                 Batal
             </button>
             @if(!empty($importPreview))
-            <button wire:click="confirmImport" wire:loading.attr="disabled"
-                style="padding:9px 16px;background:#27AE60;border:none;border-radius:8px;font-size:13px;font-weight:700;color:white;cursor:pointer;font-family:inherit;">
+            <button wire:click="confirmImport" wire:loading.attr="disabled" @if($importing) disabled @endif
+                style="padding:9px 16px;background:#27AE60;border:none;border-radius:8px;font-size:13px;font-weight:700;color:white;cursor:pointer;font-family:inherit;{{ $importing ? 'opacity:.5;cursor:not-allowed;' : '' }}">
                 <span wire:loading.remove wire:target="confirmImport">✅ Konfirmasi Import</span>
                 <span wire:loading wire:target="confirmImport">⏳ Mengimpor...</span>
             </button>
+            @endif
             @endif
         </div>
     </div>
@@ -313,10 +352,10 @@
         <table style="width:100%;border-collapse:collapse;min-width:600px;">
             <thead>
                 <tr>
-                    <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:#6B7280;background:#F9FAFB;border-bottom:1px solid #F3F4F6;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;">Siswa</th>
-                    <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:#6B7280;background:#F9FAFB;border-bottom:1px solid #F3F4F6;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;width:100px;">NIS</th>
-                    <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:#6B7280;background:#F9FAFB;border-bottom:1px solid #F3F4F6;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;width:110px;">NISN</th>
-                    <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:#6B7280;background:#F9FAFB;border-bottom:1px solid #F3F4F6;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;width:90px;">Kelas</th>
+                    <x-th-sort field="name" label="Siswa" :sortField="$sortField" :sortDirection="$sortDirection" />
+                    <x-th-sort field="nis" label="NIS" width="100px" :sortField="$sortField" :sortDirection="$sortDirection" />
+                    <x-th-sort field="nisn" label="NISN" width="110px" :sortField="$sortField" :sortDirection="$sortDirection" />
+                    <x-th-sort field="kelas" label="Kelas" width="90px" :sortField="$sortField" :sortDirection="$sortDirection" />
                     <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:#6B7280;background:#F9FAFB;border-bottom:1px solid #F3F4F6;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;width:100px;">Aksi</th>
                 </tr>
             </thead>

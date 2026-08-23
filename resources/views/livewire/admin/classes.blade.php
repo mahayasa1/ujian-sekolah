@@ -107,9 +107,9 @@
             <table style="width:100%;border-collapse:collapse;min-width:380px;">
                 <thead>
                     <tr>
-                        <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:#6B7280;background:#F9FAFB;border-bottom:1px solid #F3F4F6;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;">Nama Kelas</th>
-                        <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:#6B7280;background:#F9FAFB;border-bottom:1px solid #F3F4F6;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;width:80px;">Tingkat</th>
-                        <th style="text-align:center;padding:10px 14px;font-size:11px;font-weight:700;color:#6B7280;background:#F9FAFB;border-bottom:1px solid #F3F4F6;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;width:100px;">Jumlah Siswa</th>
+                        <x-th-sort field="name" label="Nama Kelas" :sortField="$sortField" :sortDirection="$sortDirection" />
+                        <x-th-sort field="grade" label="Tingkat" width="80px" :sortField="$sortField" :sortDirection="$sortDirection" />
+                        <x-th-sort field="students_count" label="Jumlah Siswa" width="100px" align="center" :sortField="$sortField" :sortDirection="$sortDirection" />
                         <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:#6B7280;background:#F9FAFB;border-bottom:1px solid #F3F4F6;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;width:90px;">Aksi</th>
                     </tr>
                 </thead>

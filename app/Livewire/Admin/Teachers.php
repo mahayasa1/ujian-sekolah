@@ -5,7 +5,6 @@ namespace App\Livewire\Admin;
 
 use App\Models\Teacher;
 use App\Models\User;
-use App\Models\Subject;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\Hash;
@@ -27,19 +26,43 @@ class Teachers extends Component
     public string $email    = '';
     public string $password = '';
     public string $nip      = '';
-
+    public string $sortField     = 'id';
+    public string $sortDirection = 'asc';
+    
+    public function sortBy(string $field)
+    {
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField     = $field;
+            $this->sortDirection = 'asc';
+        }
+        $this->resetPage();
+    }
+    
     // ----------------------------------------------------------------
     public function getTeachersProperty()
     {
-        return Teacher::with(['user', 'subjects'])
+        $query = Teacher::query()
+            ->select('teachers.*')
+            ->join('users', 'users.id', '=', 'teachers.user_id')
+            ->with(['user', 'subjects'])
             ->when($this->search, fn($q) =>
-                $q->whereHas('user', fn($u) =>
-                    $u->where('name', 'like', "%{$this->search}%")
-                      ->orWhere('email', 'like', "%{$this->search}%")
-                )->orWhere('nip', 'like', "%{$this->search}%")
-            )
-            ->latest()
-            ->paginate(15);
+                $q->where(function ($query) {
+                    $query->where('users.name', 'like', "%{$this->search}%")
+                        ->orWhere('users.email', 'like', "%{$this->search}%")
+                        ->orWhere('teachers.nip', 'like', "%{$this->search}%");
+                })
+            );
+
+        match ($this->sortField) {
+            'name'  => $query->orderBy('users.name', $this->sortDirection),
+            'email' => $query->orderBy('users.email', $this->sortDirection),
+            'nip'   => $query->orderBy('teachers.nip', $this->sortDirection),
+            default => $query->orderBy('teachers.id', $this->sortDirection),
+        };
+
+        return $query->paginate(15);
     }
 
     // ----------------------------------------------------------------

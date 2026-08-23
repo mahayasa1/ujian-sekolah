@@ -69,9 +69,9 @@
         <table style="width:100%;border-collapse:collapse;min-width:520px;">
             <thead>
                 <tr>
-                    <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:#6B7280;background:#F9FAFB;border-bottom:1px solid #F3F4F6;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;">Mata Pelajaran</th>
-                    <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:#6B7280;background:#F9FAFB;border-bottom:1px solid #F3F4F6;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;width:90px;">Kode</th>
-                    <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:#6B7280;background:#F9FAFB;border-bottom:1px solid #F3F4F6;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;">Guru Pengampu</th>
+                    <x-th-sort field="name" label="Mata Pelajaran" :sortField="$sortField" :sortDirection="$sortDirection" />
+                    <x-th-sort field="code" label="Kode" width="90px" :sortField="$sortField" :sortDirection="$sortDirection" />
+                    <x-th-sort field="teacher" label="Guru Pengampu" :sortField="$sortField" :sortDirection="$sortDirection" />
                     <th style="text-align:center;padding:10px 14px;font-size:11px;font-weight:700;color:#6B7280;background:#F9FAFB;border-bottom:1px solid #F3F4F6;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;width:60px;">Soal</th>
                     <th style="text-align:center;padding:10px 14px;font-size:11px;font-weight:700;color:#6B7280;background:#F9FAFB;border-bottom:1px solid #F3F4F6;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;width:60px;">Ujian</th>
                     <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:#6B7280;background:#F9FAFB;border-bottom:1px solid #F3F4F6;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;width:90px;">Aksi</th>

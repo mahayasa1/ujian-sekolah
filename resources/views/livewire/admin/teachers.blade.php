@@ -119,8 +119,8 @@
         <table style="width:100%;border-collapse:collapse;min-width:560px;">
             <thead>
                 <tr>
-                    <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:#6B7280;background:#F9FAFB;border-bottom:1px solid #F3F4F6;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;">Guru</th>
-                    <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:#6B7280;background:#F9FAFB;border-bottom:1px solid #F3F4F6;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;width:160px;">NIP</th>
+                    <x-th-sort field="name" label="Guru" :sortField="$sortField" :sortDirection="$sortDirection" />
+                    <x-th-sort field="nip" label="NIP" width="160px" :sortField="$sortField" :sortDirection="$sortDirection" />
                     <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:#6B7280;background:#F9FAFB;border-bottom:1px solid #F3F4F6;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;">Mata Pelajaran</th>
                     <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:#6B7280;background:#F9FAFB;border-bottom:1px solid #F3F4F6;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;width:100px;">Aksi</th>
                 </tr>

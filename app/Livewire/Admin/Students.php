@@ -19,6 +19,8 @@ class Students extends Component
     // --- Search & Filter ---
     public string $search        = '';
     public string $classFilter   = '';
+    public string $sortField     = 'id';
+public string $sortDirection = 'asc';
 
     // --- Form state ---
     public bool   $showForm      = false;
@@ -39,28 +41,53 @@ class Students extends Component
     public string $importMsg     = '';
     public bool   $importError   = false;
 
+    // --- Import batch progress state ---
+    // The 168-student import is split into small batches, and each batch
+    // is processed in its OWN Livewire (HTTP) request — triggered by the
+    // browser via the `import-batch-done` event below — instead of a
+    // single request hashing all 168 passwords, which used to blow past
+    // `max_execution_time` inside BcryptHasher.
+    public int    $importIndex     = 0;
+    public int    $importTotal     = 0;
+    public int    $importBatchSize = 10;
+    public int    $importInserted  = 0;
+    public int    $importUpdated   = 0;
+    public bool   $importing       = false;
+    public bool   $importCompleted = false;
+
     // ----------------------------------------------------------------
     // Paginated student list
     // ----------------------------------------------------------------
     public function getStudentsProperty()
-{
-    return Student::with(['user', 'classRoom'])
-        ->when($this->search, fn($q) =>
-            $q->where(function ($query) {
-                $query->whereHas('user', fn($u) =>
-                    $u->where('name', 'like', "%{$this->search}%")
-                      ->orWhere('email', 'like', "%{$this->search}%")
-                )
-                ->orWhere('nis', 'like', "%{$this->search}%")
-                ->orWhere('nisn', 'like', "%{$this->search}%");
-            })
-        )
-        ->when($this->classFilter, fn($q) =>
-            $q->where('class_room_id', $this->classFilter)
-        )
-        ->orderBy('id', 'asc')
-        ->paginate(15);
-}
+    {
+        $query = Student::query()
+            ->select('students.*')
+            ->join('users', 'users.id', '=', 'students.user_id')
+            ->leftJoin('class_rooms', 'class_rooms.id', '=', 'students.class_room_id')
+            ->with(['user', 'classRoom'])
+            ->when($this->search, fn($q) =>
+                $q->where(function ($query) {
+                    $query->where('users.name', 'like', "%{$this->search}%")
+                        ->orWhere('users.email', 'like', "%{$this->search}%")
+                        ->orWhere('students.nis', 'like', "%{$this->search}%")
+                        ->orWhere('students.nisn', 'like', "%{$this->search}%");
+                })
+            )
+            ->when($this->classFilter, fn($q) =>
+                $q->where('students.class_room_id', $this->classFilter)
+            );
+    
+        match ($this->sortField) {
+            'name'  => $query->orderBy('users.name', $this->sortDirection),
+            'email' => $query->orderBy('users.email', $this->sortDirection),
+            'nis'   => $query->orderBy('students.nis', $this->sortDirection),
+            'nisn'  => $query->orderBy('students.nisn', $this->sortDirection),
+            'kelas' => $query->orderBy('class_rooms.name', $this->sortDirection),
+            default => $query->orderBy('students.id', $this->sortDirection),
+        };
+    
+        return $query->paginate(15);
+    }
 
     // ----------------------------------------------------------------
     // Manual CRUD
@@ -226,6 +253,14 @@ class Students extends Component
         $this->importMsg     = count($preview) . ' baris siap diimpor. Cek data lalu klik Konfirmasi Import.';
     }
 
+    /**
+     * Kick off the batch import. This method itself does not process any
+     * rows — it only resets the progress counters and asks the browser to
+     * fire the first batch. Each batch after that runs as its own separate
+     * Livewire request (see processImportBatch()), so a 168-row import
+     * never hashes more than $importBatchSize passwords in one HTTP
+     * request/response cycle.
+     */
     public function confirmImport()
     {
         if (empty($this->importPreview)) {
@@ -234,19 +269,40 @@ class Students extends Component
             return;
         }
 
-        $inserted = 0;
-        $updated  = 0;
-        
-        // Cache hash password
-        
-        DB::transaction(function () use (&$inserted, &$updated) {
-            
-            // Ambil semua kelas sekali saja
+        $this->importIndex     = 0;
+        $this->importTotal     = count($this->importPreview);
+        $this->importInserted  = 0;
+        $this->importUpdated   = 0;
+        $this->importing       = true;
+        $this->importCompleted = false;
+        $this->importError     = false;
+        $this->importMsg       = '';
+
+        // Tell the browser to trigger the first batch as a fresh request.
+        $this->dispatch('import-batch-done');
+    }
+
+    /**
+     * Process ONE batch (default 10 rows) of $importPreview, starting at
+     * $importIndex. This runs as an independent HTTP request every time
+     * it's called, so bcrypt only ever hashes up to $importBatchSize new
+     * passwords per request — well within max_execution_time.
+     */
+    public function processImportBatch()
+    {
+        if (empty($this->importPreview) || $this->importIndex >= $this->importTotal) {
+            $this->importing       = false;
+            $this->importCompleted = true;
+            return;
+        }
+
+        $batch = array_slice($this->importPreview, $this->importIndex, $this->importBatchSize);
+
+        DB::transaction(function () use ($batch) {
+            // Ambil semua kelas sekali saja per batch
             $classRooms = ClassRoom::pluck('id', 'name');
-    
 
-            foreach ($this->importPreview as $row) {
-
+            foreach ($batch as $row) {
                 if (empty($row['name']) || empty($row['email'])) {
                     continue;
                 }
@@ -256,38 +312,32 @@ class Students extends Component
 
                 if ($row['kelas'] !== '') {
                     $classRoomId = $classRooms[$row['kelas']] ?? null;
-                    }
+                }
 
-                    // Cari user berdasarkan email
+                // Cari user berdasarkan email
                 $user = User::where('email', $row['email'])->first();
 
                 if ($user) {
-
                     $user->update([
                         'name' => $row['name'],
                         'role' => 'siswa',
                     ]);
 
-                    $updated++;
-                    
-                    } else {
-                        
+                    $this->importUpdated++;
+                } else {
                     $password = $row['password'] ?: 'password';
-                    $passwordHashes = [];
 
-                    // Hash hanya sekali untuk password yang sama
-                    if (!isset($passwordHashes[$password])) {
-                        $passwordHashes[$password] = Hash::make($password);
-                    }
-
+                    // Setiap siswa tetap mendapat hash dari password
+                    // masing-masing — tidak ada password default yang sama
+                    // dipaksakan ke semua siswa.
                     $user = User::create([
                         'name'     => $row['name'],
                         'email'    => $row['email'],
-                        'password' => $passwordHashes[$password],
+                        'password' => Hash::make($password),
                         'role'     => 'siswa',
                     ]);
 
-                    $inserted++;
+                    $this->importInserted++;
                 }
 
                 Student::updateOrCreate(
@@ -301,21 +351,32 @@ class Students extends Component
             }
         });
 
-        $this->importPreview = [];
-        $this->importFile    = null;
-        $this->showImport    = false;
-        $this->importError   = false;
-        $this->importMsg     = '';
+        $this->importIndex += count($batch);
 
-        session()->flash(
-            'success',
-            "Import selesai: {$inserted} siswa baru ditambahkan, {$updated} siswa diperbarui."
-        );
+        if ($this->importIndex >= $this->importTotal) {
+            $this->importing       = false;
+            $this->importCompleted = true;
+            $this->importPreview   = [];
+            $this->importFile      = null;
+
+            session()->flash(
+                'success',
+                "Import selesai: {$this->importInserted} siswa baru ditambahkan, {$this->importUpdated} siswa diperbarui."
+            );
+        } else {
+            // More rows left — ask the browser to trigger the next batch
+            // as its own new request.
+            $this->dispatch('import-batch-done');
+        }
     }
 
     public function cancelImport()
     {
-        $this->reset(['showImport', 'importFile', 'importPreview', 'importMsg', 'importError']);
+        $this->reset([
+            'showImport', 'importFile', 'importPreview', 'importMsg', 'importError',
+            'importIndex', 'importTotal', 'importInserted', 'importUpdated',
+            'importing', 'importCompleted',
+        ]);
     }
 
     // ----------------------------------------------------------------
@@ -468,6 +529,17 @@ class Students extends Component
         }
 
         return $index - 1;
+    }
+
+    public function sortBy(string $field)
+    {
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField     = $field;
+            $this->sortDirection = 'asc';
+        }
+        $this->resetPage();
     }
 
     // ----------------------------------------------------------------
