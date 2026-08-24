@@ -187,42 +187,236 @@ class Students extends Component
      * For xlsx, we ask the user to export as CSV first, OR we handle both.
      */
     public function previewImport()
-    {
-        $this->validate([
-            'importFile' => 'required|file|mimes:csv,txt,xlsx|max:2048',
+{
+    /*
+    |--------------------------------------------------------------------------
+    | TEST LOGGING - START
+    |--------------------------------------------------------------------------
+    */
+    \Log::info('================ IMPORT PREVIEW START ================');
+
+    \Log::info('IMPORT PREVIEW - INITIAL STATE', [
+        'memory' => memory_get_usage(true),
+        'memory_mb' => round(memory_get_usage(true) / 1024 / 1024, 2),
+        'peak_memory' => memory_get_peak_usage(true),
+        'peak_memory_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
+        'importPreview_count_before' => count($this->importPreview ?? []),
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | VALIDASI FILE
+    |--------------------------------------------------------------------------
+    */
+    $this->validate([
+        'importFile' => 'required|file|mimes:csv,txt,xlsx|max:2048',
+    ]);
+
+    \Log::info('IMPORT PREVIEW - VALIDATION PASSED', [
+        'memory' => memory_get_usage(true),
+        'memory_mb' => round(memory_get_usage(true) / 1024 / 1024, 2),
+        'peak_memory_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | RESET STATE
+    |--------------------------------------------------------------------------
+    */
+    $this->importMsg     = '';
+    $this->importError   = false;
+    $this->importPreview = [];
+
+    /*
+    |--------------------------------------------------------------------------
+    | FILE INFORMATION
+    |--------------------------------------------------------------------------
+    */
+    $path = $this->importFile->getRealPath();
+    $ext  = strtolower($this->importFile->getClientOriginalExtension());
+
+    \Log::info('IMPORT PREVIEW - FILE INFO', [
+        'path_exists' => $path ? file_exists($path) : false,
+        'file_size_bytes' => $path && file_exists($path)
+            ? filesize($path)
+            : null,
+        'file_size_kb' => $path && file_exists($path)
+            ? round(filesize($path) / 1024, 2)
+            : null,
+        'file_size_mb' => $path && file_exists($path)
+            ? round(filesize($path) / 1024 / 1024, 2)
+            : null,
+        'extension' => $ext,
+        'memory_mb' => round(memory_get_usage(true) / 1024 / 1024, 2),
+        'peak_memory_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
+    ]);
+
+    $preview = [];
+
+    /*
+    |--------------------------------------------------------------------------
+    | XLSX
+    |--------------------------------------------------------------------------
+    */
+    if ($ext === 'xlsx') {
+
+        \Log::info('IMPORT PREVIEW - BEFORE readXlsx()', [
+            'memory' => memory_get_usage(true),
+            'memory_mb' => round(memory_get_usage(true) / 1024 / 1024, 2),
+            'peak_memory' => memory_get_peak_usage(true),
+            'peak_memory_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
         ]);
-
-        $this->importMsg     = '';
-        $this->importError   = false;
-        $this->importPreview = [];
-
-        $path = $this->importFile->getRealPath();
-        $ext  = strtolower($this->importFile->getClientOriginalExtension());
-
-        $preview = [];
 
         /*
         |--------------------------------------------------------------------------
-        | XLSX
+        | READ XLSX
         |--------------------------------------------------------------------------
         */
-        if ($ext === 'xlsx') {
+        $rows = $this->readXlsx($path);
 
-            $rows = $this->readXlsx($path);
+        \Log::info('IMPORT PREVIEW - AFTER readXlsx()', [
+            'rows_count' => is_countable($rows)
+                ? count($rows)
+                : null,
+            'rows_type' => get_debug_type($rows),
+            'memory' => memory_get_usage(true),
+            'memory_mb' => round(memory_get_usage(true) / 1024 / 1024, 2),
+            'peak_memory' => memory_get_peak_usage(true),
+            'peak_memory_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
+        ]);
 
-            foreach ($rows as $r) {
+        /*
+        |--------------------------------------------------------------------------
+        | PROCESS XLSX ROWS
+        |--------------------------------------------------------------------------
+        */
+        $rowNumber = 0;
+
+        foreach ($rows as $r) {
+
+            $rowNumber++;
+
+            $name = trim(
+                $r['nama']
+                ?? $r['name']
+                ?? ''
+            );
+
+            $email = strtolower(
+                trim($r['email'] ?? '')
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Skip empty / incomplete row
+            |--------------------------------------------------------------------------
+            */
+            if ($name === '' || $email === '') {
+                continue;
+            }
+
+            $preview[] = [
+                'name'     => $name,
+                'email'    => $email,
+                'password' => trim($r['password'] ?? 'password'),
+                'nis'      => trim($r['nis'] ?? ''),
+                'nisn'     => trim($r['nisn'] ?? ''),
+                'kelas'    => trim(
+                    $r['kelas']
+                    ?? $r['class']
+                    ?? $r['classroom']
+                    ?? ''
+                ),
+            ];
+        }
+
+        \Log::info('IMPORT PREVIEW - AFTER XLSX LOOP', [
+            'source_rows' => $rowNumber,
+            'preview_rows' => count($preview),
+            'memory' => memory_get_usage(true),
+            'memory_mb' => round(memory_get_usage(true) / 1024 / 1024, 2),
+            'peak_memory' => memory_get_peak_usage(true),
+            'peak_memory_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
+        ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | CSV / TXT
+    |--------------------------------------------------------------------------
+    */
+    } else {
+
+        \Log::info('IMPORT PREVIEW - CSV/TXT MODE', [
+            'memory_mb' => round(memory_get_usage(true) / 1024 / 1024, 2),
+            'peak_memory_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
+        ]);
+
+        if (($handle = fopen($path, 'r')) !== false) {
+
+            $header = null;
+            $csvRowNumber = 0;
+
+            while (($line = fgetcsv($handle, 1000, ',')) !== false) {
+
+                $csvRowNumber++;
+
+                /*
+                |--------------------------------------------------------------------------
+                | Skip empty row
+                |--------------------------------------------------------------------------
+                */
+                if (
+                    count(
+                        array_filter(
+                            $line,
+                            fn ($v) => trim((string) $v) !== ''
+                        )
+                    ) === 0
+                ) {
+                    continue;
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Header
+                |--------------------------------------------------------------------------
+                */
+                if ($header === null) {
+
+                    $header = array_map(
+                        'strtolower',
+                        array_map('trim', $line)
+                    );
+
+                    continue;
+                }
+
+                if (count($line) < 2) {
+                    continue;
+                }
+
+                $line = array_pad(
+                    $line,
+                    count($header),
+                    ''
+                );
+
+                $row = array_combine($header, $line);
+
+                if (!$row) {
+                    continue;
+                }
 
                 $name = trim(
-                    $r['nama']
-                    ?? $r['name']
+                    $row['nama']
+                    ?? $row['name']
                     ?? ''
                 );
 
                 $email = strtolower(
-                    trim($r['email'] ?? '')
+                    trim($row['email'] ?? '')
                 );
 
-                // Baris kosong / tidak lengkap langsung dilewati
                 if ($name === '' || $email === '') {
                     continue;
                 }
@@ -230,154 +424,149 @@ class Students extends Component
                 $preview[] = [
                     'name'     => $name,
                     'email'    => $email,
-                    'password' => trim($r['password'] ?? 'password'),
-                    'nis'      => trim($r['nis'] ?? ''),
-                    'nisn'     => trim($r['nisn'] ?? ''),
+                    'password' => trim($row['password'] ?? 'password'),
+                    'nis'      => trim($row['nis'] ?? ''),
+                    'nisn'     => trim($row['nisn'] ?? ''),
                     'kelas'    => trim(
-                        $r['kelas']
-                        ?? $r['class']
-                        ?? $r['classroom']
+                        $row['kelas']
+                        ?? $row['class']
+                        ?? $row['classroom']
                         ?? ''
                     ),
                 ];
             }
 
-        /*
-        |--------------------------------------------------------------------------
-        | CSV / TXT
-        |--------------------------------------------------------------------------
-        */
-        } else {
+            fclose($handle);
 
-            if (($handle = fopen($path, 'r')) !== false) {
-
-                $header = null;
-
-                while (($line = fgetcsv($handle, 1000, ',')) !== false) {
-
-                    // Skip baris kosong
-                    if (count(array_filter($line, fn ($v) => trim((string) $v) !== '')) === 0) {
-                        continue;
-                    }
-
-                    // Header
-                    if ($header === null) {
-                        $header = array_map(
-                            'strtolower',
-                            array_map('trim', $line)
-                        );
-
-                        continue;
-                    }
-
-                    if (count($line) < 2) {
-                        continue;
-                    }
-
-                    $line = array_pad(
-                        $line,
-                        count($header),
-                        ''
-                    );
-
-                    $row = array_combine($header, $line);
-
-                    if (!$row) {
-                        continue;
-                    }
-
-                    $name = trim(
-                        $row['nama']
-                        ?? $row['name']
-                        ?? ''
-                    );
-
-                    $email = strtolower(
-                        trim($row['email'] ?? '')
-                    );
-
-                    if ($name === '' || $email === '') {
-                        continue;
-                    }
-
-                    $preview[] = [
-                        'name'     => $name,
-                        'email'    => $email,
-                        'password' => trim($row['password'] ?? 'password'),
-                        'nis'      => trim($row['nis'] ?? ''),
-                        'nisn'     => trim($row['nisn'] ?? ''),
-                        'kelas'    => trim(
-                            $row['kelas']
-                            ?? $row['class']
-                            ?? $row['classroom']
-                            ?? ''
-                        ),
-                    ];
-                }
-
-                fclose($handle);
-            }
+            \Log::info('IMPORT PREVIEW - AFTER CSV LOOP', [
+                'source_rows' => $csvRowNumber,
+                'preview_rows' => count($preview),
+                'memory' => memory_get_usage(true),
+                'memory_mb' => round(memory_get_usage(true) / 1024 / 1024, 2),
+                'peak_memory' => memory_get_peak_usage(true),
+                'peak_memory_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
+            ]);
         }
+    }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Validasi hasil
-        |--------------------------------------------------------------------------
-        */
+    /*
+    |--------------------------------------------------------------------------
+    | HASIL PREVIEW
+    |--------------------------------------------------------------------------
+    */
+    \Log::info('IMPORT PREVIEW - BEFORE EMPTY CHECK', [
+        'preview_rows' => count($preview),
+        'memory' => memory_get_usage(true),
+        'memory_mb' => round(memory_get_usage(true) / 1024 / 1024, 2),
+        'peak_memory' => memory_get_peak_usage(true),
+        'peak_memory_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
+    ]);
 
-        if (empty($preview)) {
-            $this->importError = true;
-            $this->importMsg   =
-                'Tidak ada baris valid ditemukan. Pastikan kolom nama/name dan email tersedia.';
+    /*
+    |--------------------------------------------------------------------------
+    | EMPTY RESULT
+    |--------------------------------------------------------------------------
+    */
+    if (empty($preview)) {
 
-            return;
-        }
+        \Log::warning('IMPORT PREVIEW - EMPTY RESULT');
 
-        /*
-        |--------------------------------------------------------------------------
-        | Cek email yang sudah ada — 1 query untuk semua data
-        |--------------------------------------------------------------------------
-        */
-
-        $emails = collect($preview)
-            ->pluck('email')
-            ->filter()
-            ->map(fn ($email) => strtolower(trim($email)))
-            ->unique()
-            ->values();
-
-        $existingEmails = User::whereIn('email', $emails)
-            ->pluck('email')
-            ->map(fn ($email) => strtolower($email))
-            ->flip()
-            ->all();
-
-        foreach ($preview as &$row) {
-            $row['existing'] = isset($existingEmails[$row['email']]);
-        }
-
-        unset($row);
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Simpan preview
-        |--------------------------------------------------------------------------
-        */
-
-        \Log::info('IMPORT PREVIEW', [
-    'rows' => count($preview),
-    'memory' => memory_get_usage(true),
-    'peak_memory' => memory_get_peak_usage(true),
-]);
-
-$this->importPreview = array_values($preview);
-
-        $count = count($this->importPreview);
+        $this->importError = true;
 
         $this->importMsg =
-            "{$count} baris siap diimpor. Cek data lalu klik Konfirmasi Import.";
+            'Tidak ada baris valid ditemukan. Pastikan kolom nama/name dan email tersedia.';
+
+        \Log::info('================ IMPORT PREVIEW END - EMPTY ================');
+
+        return;
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | LOG PREVIEW SIZE BEFORE LIVEWIRE STATE
+    |--------------------------------------------------------------------------
+    */
+    $previewSerialized = serialize($preview);
+
+    \Log::info('IMPORT PREVIEW - SERIALIZED PREVIEW SIZE', [
+        'rows' => count($preview),
+        'bytes' => strlen($previewSerialized),
+        'kb' => round(strlen($previewSerialized) / 1024, 2),
+        'mb' => round(strlen($previewSerialized) / 1024 / 1024, 4),
+        'memory_mb' => round(memory_get_usage(true) / 1024 / 1024, 2),
+        'peak_memory_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | ASSIGN TO LIVEWIRE PROPERTY
+    |--------------------------------------------------------------------------
+    */
+    \Log::info('IMPORT PREVIEW - BEFORE STATE ASSIGNMENT', [
+        'preview_rows' => count($preview),
+        'memory_mb' => round(memory_get_usage(true) / 1024 / 1024, 2),
+        'peak_memory_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
+    ]);
+
+    $this->importPreview = array_values($preview);
+
+    /*
+    |--------------------------------------------------------------------------
+    | AFTER LIVEWIRE STATE ASSIGNMENT
+    |--------------------------------------------------------------------------
+    */
+    \Log::info('IMPORT PREVIEW - AFTER STATE ASSIGNMENT', [
+        'importPreview_rows' => count($this->importPreview),
+        'memory' => memory_get_usage(true),
+        'memory_mb' => round(memory_get_usage(true) / 1024 / 1024, 2),
+        'peak_memory' => memory_get_peak_usage(true),
+        'peak_memory_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | SERIALIZE LIVEWIRE PROPERTY
+    |--------------------------------------------------------------------------
+    */
+    $livewireStateSerialized = serialize($this->importPreview);
+
+    \Log::info('IMPORT PREVIEW - LIVEWIRE STATE SIZE', [
+        'rows' => count($this->importPreview),
+        'bytes' => strlen($livewireStateSerialized),
+        'kb' => round(strlen($livewireStateSerialized) / 1024, 2),
+        'mb' => round(strlen($livewireStateSerialized) / 1024 / 1024, 4),
+        'memory_mb' => round(memory_get_usage(true) / 1024 / 1024, 2),
+        'peak_memory_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
+    ]);
+
+    unset($previewSerialized, $livewireStateSerialized);
+
+    /*
+    |--------------------------------------------------------------------------
+    | FINAL MESSAGE
+    |--------------------------------------------------------------------------
+    */
+    $count = count($this->importPreview);
+
+    $this->importMsg =
+        "{$count} baris siap diimpor. Cek data lalu klik Konfirmasi Import.";
+
+    /*
+    |--------------------------------------------------------------------------
+    | FINAL LOG
+    |--------------------------------------------------------------------------
+    */
+    \Log::info('IMPORT PREVIEW - METHOD FINISHED', [
+        'count' => $count,
+        'message' => $this->importMsg,
+        'memory' => memory_get_usage(true),
+        'memory_mb' => round(memory_get_usage(true) / 1024 / 1024, 2),
+        'peak_memory' => memory_get_peak_usage(true),
+        'peak_memory_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
+    ]);
+
+    \Log::info('================ IMPORT PREVIEW END ================');
+}
 
     /**
      * Kick off the batched import. Called once when the user clicks
