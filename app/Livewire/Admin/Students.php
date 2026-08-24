@@ -338,26 +338,26 @@ class Students extends Component
         | Cek email yang sudah ada — 1 query untuk semua data
         |--------------------------------------------------------------------------
         */
-        
+
         $emails = collect($preview)
             ->pluck('email')
             ->filter()
             ->map(fn ($email) => strtolower(trim($email)))
             ->unique()
             ->values();
-        
+
         $existingEmails = User::whereIn('email', $emails)
             ->pluck('email')
             ->map(fn ($email) => strtolower($email))
             ->flip()
             ->all();
-        
+
         foreach ($preview as &$row) {
             $row['existing'] = isset($existingEmails[$row['email']]);
         }
-        
+
         unset($row);
-        
+
 
         /*
         |--------------------------------------------------------------------------
@@ -365,7 +365,13 @@ class Students extends Component
         |--------------------------------------------------------------------------
         */
 
-        $this->importPreview = array_values($preview);
+        \Log::info('IMPORT PREVIEW', [
+    'rows' => count($preview),
+    'memory' => memory_get_usage(true),
+    'peak_memory' => memory_get_peak_usage(true),
+]);
+
+$this->importPreview = array_values($preview);
 
         $count = count($this->importPreview);
 
@@ -388,12 +394,18 @@ class Students extends Component
             return;
         }
 
-        $this->importIndex     = 0;
-        $this->importTotal     = count($this->importPreview);
-        $this->importInserted  = 0;
-        $this->importUpdated   = 0;
-        $this->importing       = true;
+        session()->put('student_import_data', $this->importPreview);
+
+        $this->importing = true;
         $this->importCompleted = false;
+        $this->importIndex = 0;
+        $this->importInserted = 0;
+        $this->importUpdated = 0;
+        $this->importTotal = count($this->importPreview);
+
+        // Tidak perlu lagi membawa 168 row
+        // di state Livewire setiap request.
+        $this->importPreview = [];
 
         $this->processImportBatch();
     }
@@ -405,86 +417,118 @@ class Students extends Component
      * passwords per request — well within max_execution_time.
      */
     public function processImportBatch()
-    {
-        if (empty($this->importPreview) || $this->importIndex >= $this->importTotal) {
-            $this->importing       = false;
-            $this->importCompleted = true;
-            return;
-        }
+{
+    $importData = session('student_import_data', []);
 
-        $batch = array_slice($this->importPreview, $this->importIndex, $this->importBatchSize);
+    if (
+        empty($importData) ||
+        $this->importIndex >= $this->importTotal
+    ) {
+        $this->finishImport();
 
-        DB::transaction(function () use ($batch) {
-            // Ambil semua kelas sekali saja per batch
-            $classRooms = ClassRoom::pluck('id', 'name');
-
-            foreach ($batch as $row) {
-                if (empty($row['name']) || empty($row['email'])) {
-                    continue;
-                }
-
-                // Cari class tanpa query berulang
-                $classRoomId = null;
-
-                if ($row['kelas'] !== '') {
-                    $classRoomId = $classRooms[$row['kelas']] ?? null;
-                }
-
-                // Cari user berdasarkan email
-                $user = User::where('email', $row['email'])->first();
-
-                if ($user) {
-                    $user->update([
-                        'name' => $row['name'],
-                        'role' => 'siswa',
-                    ]);
-
-                    $this->importUpdated++;
-                } else {
-                    $password = $row['password'] ?: 'password';
-
-                    // Setiap siswa tetap mendapat hash dari password
-                    // masing-masing — tidak ada password default yang sama
-                    // dipaksakan ke semua siswa.
-                    $user = User::create([
-                        'name'     => $row['name'],
-                        'email'    => $row['email'],
-                        'password' => Hash::make($password),
-                        'role'     => 'siswa',
-                    ]);
-
-                    $this->importInserted++;
-                }
-
-                Student::updateOrCreate(
-                    ['user_id' => $user->id],
-                    [
-                        'nis'           => $row['nis'] ?: null,
-                        'nisn'          => $row['nisn'] ?: null,
-                        'class_room_id' => $classRoomId,
-                    ]
-                );
-            }
-        });
-
-        $this->importIndex += count($batch);
-
-        if ($this->importIndex >= $this->importTotal) {
-            $this->importing       = false;
-            $this->importCompleted = true;
-            $this->importPreview   = [];
-            $this->importFile      = null;
-
-            session()->flash(
-                'success',
-                "Import selesai: {$this->importInserted} siswa baru ditambahkan, {$this->importUpdated} siswa diperbarui."
-            );
-        } else {
-            // More rows left — ask the browser to trigger the next batch
-            // as its own new request.
-            $this->dispatch('import-batch-done');
-        }
+        return;
     }
+
+    $batch = array_slice(
+        $importData,
+        $this->importIndex,
+        $this->importBatchSize
+    );
+
+    DB::transaction(function () use ($batch) {
+
+        $classRooms = ClassRoom::pluck('id', 'name');
+
+        $emails = collect($batch)
+            ->pluck('email')
+            ->filter()
+            ->map(fn ($email) => strtolower(trim($email)))
+            ->unique()
+            ->values();
+
+        $existingUsers = User::whereIn('email', $emails)
+            ->get()
+            ->keyBy(fn ($user) => strtolower($user->email));
+
+        foreach ($batch as $row) {
+
+            if (
+                empty($row['name']) ||
+                empty($row['email'])
+            ) {
+                continue;
+            }
+
+            $email = strtolower(trim($row['email']));
+
+            $classRoomId = null;
+
+            if (!empty($row['kelas'])) {
+                $classRoomId = $classRooms[$row['kelas']] ?? null;
+            }
+
+            $user = $existingUsers->get($email);
+
+            if ($user) {
+
+                $user->update([
+                    'name' => $row['name'],
+                    'role' => 'siswa',
+                ]);
+
+                $this->importUpdated++;
+
+            } else {
+
+                $password = $row['password'] ?: 'password';
+
+                $user = User::create([
+                    'name'     => $row['name'],
+                    'email'    => $email,
+                    'password' => Hash::make($password),
+                    'role'     => 'siswa',
+                ]);
+
+                $this->importInserted++;
+            }
+
+            Student::updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'nis'           => $row['nis'] ?: null,
+                    'nisn'          => $row['nisn'] ?: null,
+                    'class_room_id' => $classRoomId,
+                ]
+            );
+        }
+    });
+
+    $this->importIndex += count($batch);
+
+    if ($this->importIndex >= $this->importTotal) {
+
+        $this->finishImport();
+
+    } else {
+
+        $this->dispatch('import-batch-done');
+    }
+}
+
+    private function finishImport()
+{
+    session()->forget('student_import_data');
+
+    $this->importing = false;
+    $this->importCompleted = true;
+    $this->importPreview = [];
+    $this->importFile = null;
+
+    session()->flash(
+        'success',
+        "Import selesai: {$this->importInserted} siswa baru ditambahkan, {$this->importUpdated} siswa diperbarui."
+    );
+}
 
     public function cancelImport()
     {

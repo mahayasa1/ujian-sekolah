@@ -148,10 +148,19 @@
      ============================================================ --}}
 @if($showImport)
 <div
-    x-data="{}"
     x-init="
-        $wire.on('import-batch-done', () => {
-            $wire.processImportBatch();
+        let processing = false;
+    
+        $wire.on('import-batch-done', async () => {
+            if (processing) return;
+        
+            processing = true;
+        
+            try {
+                await $wire.processImportBatch();
+            } finally {
+                processing = false;
+            }
         });
     "
     style="position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;">
