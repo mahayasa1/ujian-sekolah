@@ -411,101 +411,428 @@ class Students extends Component
      */
     public function processImportBatch()
 {
-    $importData = session('student_import_data', []);
+    $requestId = uniqid('IMPORT-', true);
+
+    Log::info('====================================================');
+    Log::info("{$requestId} PROCESS IMPORT BATCH START");
+
+    Log::info("{$requestId} INITIAL STATE", [
+        'importing' => $this->importing,
+        'importCompleted' => $this->importCompleted,
+        'importIndex' => $this->importIndex,
+        'importTotal' => $this->importTotal,
+        'importBatchSize' => $this->importBatchSize,
+
+        'preview_count' => is_array($this->importPreview)
+            ? count($this->importPreview)
+            : 0,
+
+        'memory_mb' => round(memory_get_usage(true) / 1024 / 1024, 2),
+        'peak_memory_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | CEK APAKAH SUDAH SELESAI
+    |--------------------------------------------------------------------------
+    */
 
     if (
-        empty($importData) ||
+        empty($this->importPreview) ||
         $this->importIndex >= $this->importTotal
     ) {
-        $this->finishImport();
+        Log::info("{$requestId} IMPORT ALREADY FINISHED", [
+            'importIndex' => $this->importIndex,
+            'importTotal' => $this->importTotal,
+            'preview_empty' => empty($this->importPreview),
+        ]);
+
+        $this->importing       = false;
+        $this->importCompleted = true;
+
+        Log::info("{$requestId} PROCESS IMPORT BATCH END - ALREADY FINISHED");
 
         return;
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | AMBIL BATCH
+    |--------------------------------------------------------------------------
+    */
+
     $batch = array_slice(
-        $importData,
+        $this->importPreview,
         $this->importIndex,
         $this->importBatchSize
     );
 
-    DB::transaction(function () use ($batch) {
+    Log::info("{$requestId} BATCH CREATED", [
+        'start_index' => $this->importIndex,
+        'batch_size' => count($batch),
+        'configured_batch_size' => $this->importBatchSize,
+        'total' => $this->importTotal,
 
-        $classRooms = ClassRoom::pluck('id', 'name');
+        'first_email' => $batch[0]['email'] ?? null,
+        'last_email' => $batch[count($batch) - 1]['email'] ?? null,
 
-        $emails = collect($batch)
-            ->pluck('email')
-            ->filter()
-            ->map(fn ($email) => strtolower(trim($email)))
-            ->unique()
-            ->values();
+        'memory_mb' => round(memory_get_usage(true) / 1024 / 1024, 2),
+        'peak_memory_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
+    ]);
 
-        $existingUsers = User::whereIn('email', $emails)
-            ->get()
-            ->keyBy(fn ($user) => strtolower($user->email));
+    /*
+    |--------------------------------------------------------------------------
+    | LOAD CLASSROOM SEKALI
+    |--------------------------------------------------------------------------
+    */
 
-        foreach ($batch as $row) {
+    Log::info("{$requestId} BEFORE CLASSROOM QUERY");
 
-            if (
-                empty($row['name']) ||
-                empty($row['email'])
-            ) {
-                continue;
-            }
+    $classRooms = ClassRoom::pluck('id', 'name');
 
-            $email = strtolower(trim($row['email']));
+    Log::info("{$requestId} AFTER CLASSROOM QUERY", [
+        'classroom_count' => $classRooms->count(),
+        'memory_mb' => round(memory_get_usage(true) / 1024 / 1024, 2),
+        'peak_memory_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
+    ]);
 
-            $classRoomId = null;
+    /*
+    |--------------------------------------------------------------------------
+    | TRANSACTION
+    |--------------------------------------------------------------------------
+    */
 
-            if (!empty($row['kelas'])) {
-                $classRoomId = $classRooms[$row['kelas']] ?? null;
-            }
+    try {
 
-            $user = $existingUsers->get($email);
+        DB::transaction(function () use ($batch, $requestId, $classRooms) {
 
-            if ($user) {
+            Log::info("{$requestId} TRANSACTION START", [
+                'batch_count' => count($batch),
+            ]);
 
-                $user->update([
-                    'name' => $row['name'],
-                    'role' => 'siswa',
+            foreach ($batch as $batchKey => $row) {
+
+                $number = $batchKey + 1;
+
+                Log::info("{$requestId} ROW START", [
+                    'batch_row' => $number,
+                    'name' => $row['name'] ?? null,
+                    'email' => $row['email'] ?? null,
+                    'nis' => $row['nis'] ?? null,
+                    'nisn' => $row['nisn'] ?? null,
+                    'kelas' => $row['kelas'] ?? null,
+
+                    'memory_mb' => round(
+                        memory_get_usage(true) / 1024 / 1024,
+                        2
+                    ),
                 ]);
 
-                $this->importUpdated++;
+                /*
+                |--------------------------------------------------------------------------
+                | VALIDASI DATA
+                |--------------------------------------------------------------------------
+                */
 
-            } else {
+                if (
+                    empty($row['name']) ||
+                    empty($row['email'])
+                ) {
+                    Log::warning("{$requestId} ROW SKIPPED", [
+                        'batch_row' => $number,
+                        'reason' => 'name atau email kosong',
+                    ]);
 
-                $password = $row['password'] ?: 'password';
+                    continue;
+                }
 
-                $user = User::create([
-                    'name'     => $row['name'],
-                    'email'    => $email,
-                    'password' => Hash::make($password),
-                    'role'     => 'siswa',
+                /*
+                |--------------------------------------------------------------------------
+                | CLASSROOM
+                |--------------------------------------------------------------------------
+                */
+
+                $classRoomId = null;
+
+                if (!empty($row['kelas'])) {
+
+                    $classRoomId = $classRooms[$row['kelas']] ?? null;
+
+                    Log::info("{$requestId} CLASSROOM CHECK", [
+                        'batch_row' => $number,
+                        'kelas' => $row['kelas'],
+                        'class_room_id' => $classRoomId,
+                    ]);
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | CARI USER
+                |--------------------------------------------------------------------------
+                */
+
+                Log::info("{$requestId} BEFORE USER QUERY", [
+                    'batch_row' => $number,
+                    'email' => $row['email'],
                 ]);
 
-                $this->importInserted++;
-            }
+                $user = User::where(
+                    'email',
+                    $row['email']
+                )->first();
 
-            Student::updateOrCreate(
-                ['user_id' => $user->id],
-                [
-                    'nis'           => $row['nis'] ?: null,
-                    'nisn'          => $row['nisn'] ?: null,
+                Log::info("{$requestId} AFTER USER QUERY", [
+                    'batch_row' => $number,
+                    'user_found' => (bool) $user,
+                    'user_id' => $user?->id,
+                ]);
+
+                /*
+                |--------------------------------------------------------------------------
+                | UPDATE USER
+                |--------------------------------------------------------------------------
+                */
+
+                if ($user) {
+
+                    Log::info("{$requestId} BEFORE USER UPDATE", [
+                        'batch_row' => $number,
+                        'user_id' => $user->id,
+                    ]);
+
+                    $user->update([
+                        'name' => $row['name'],
+                        'role' => 'siswa',
+                    ]);
+
+                    $this->importUpdated++;
+
+                    Log::info("{$requestId} AFTER USER UPDATE", [
+                        'batch_row' => $number,
+                        'user_id' => $user->id,
+                        'importUpdated' => $this->importUpdated,
+                    ]);
+
+                /*
+                |--------------------------------------------------------------------------
+                | CREATE USER
+                |--------------------------------------------------------------------------
+                */
+
+                } else {
+
+                    $password = $row['password'] ?: 'password';
+
+                    Log::info("{$requestId} BEFORE PASSWORD HASH", [
+                        'batch_row' => $number,
+                        'email' => $row['email'],
+
+                        // JANGAN LOG PASSWORD ASLI
+                        'password_length' => strlen($password),
+
+                        'memory_mb' => round(
+                            memory_get_usage(true) / 1024 / 1024,
+                            2
+                        ),
+                    ]);
+
+                    $hashStart = microtime(true);
+
+                    $hashedPassword = Hash::make($password);
+
+                    $hashTime = round(
+                        microtime(true) - $hashStart,
+                        3
+                    );
+
+                    Log::info("{$requestId} AFTER PASSWORD HASH", [
+                        'batch_row' => $number,
+                        'hash_time_seconds' => $hashTime,
+
+                        'memory_mb' => round(
+                            memory_get_usage(true) / 1024 / 1024,
+                            2
+                        ),
+                    ]);
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | CREATE USER
+                    |--------------------------------------------------------------------------
+                    */
+
+                    Log::info("{$requestId} BEFORE USER CREATE", [
+                        'batch_row' => $number,
+                        'email' => $row['email'],
+                    ]);
+
+                    $user = User::create([
+                        'name' => $row['name'],
+                        'email' => $row['email'],
+                        'password' => $hashedPassword,
+                        'role' => 'siswa',
+                    ]);
+
+                    $this->importInserted++;
+
+                    Log::info("{$requestId} AFTER USER CREATE", [
+                        'batch_row' => $number,
+                        'user_id' => $user->id,
+                        'importInserted' => $this->importInserted,
+                    ]);
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | STUDENT
+                |--------------------------------------------------------------------------
+                */
+
+                Log::info("{$requestId} BEFORE STUDENT UPDATE OR CREATE", [
+                    'batch_row' => $number,
+                    'user_id' => $user->id,
                     'class_room_id' => $classRoomId,
-                ]
-            );
-        }
-    });
+                ]);
+
+                Student::updateOrCreate(
+                    [
+                        'user_id' => $user->id,
+                    ],
+                    [
+                        'nis' => $row['nis'] ?: null,
+                        'nisn' => $row['nisn'] ?: null,
+                        'class_room_id' => $classRoomId,
+                    ]
+                );
+
+                Log::info("{$requestId} AFTER STUDENT UPDATE OR CREATE", [
+                    'batch_row' => $number,
+                    'user_id' => $user->id,
+                ]);
+
+                Log::info("{$requestId} ROW FINISHED", [
+                    'batch_row' => $number,
+                    'email' => $row['email'],
+                    'memory_mb' => round(
+                        memory_get_usage(true) / 1024 / 1024,
+                        2
+                    ),
+                    'peak_memory_mb' => round(
+                        memory_get_peak_usage(true) / 1024 / 1024,
+                        2
+                    ),
+                ]);
+            }
+
+            Log::info("{$requestId} TRANSACTION CALLBACK FINISHED");
+        });
+
+        Log::info("{$requestId} TRANSACTION COMMITTED");
+
+    } catch (\Throwable $e) {
+
+        Log::error("{$requestId} IMPORT BATCH FAILED", [
+            'message' => $e->getMessage(),
+            'exception' => get_class($e),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => $e->getTraceAsString(),
+
+            'importIndex' => $this->importIndex,
+            'importTotal' => $this->importTotal,
+
+            'memory_mb' => round(
+                memory_get_usage(true) / 1024 / 1024,
+                2
+            ),
+
+            'peak_memory_mb' => round(
+                memory_get_peak_usage(true) / 1024 / 1024,
+                2
+            ),
+        ]);
+
+        $this->importing = false;
+        $this->importError = true;
+
+        $this->importMsg =
+            'Import gagal pada batch ' .
+            ($this->importIndex + 1) .
+            '. Silakan cek log server.';
+
+        return;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | UPDATE INDEX
+    |--------------------------------------------------------------------------
+    */
+
+    $oldIndex = $this->importIndex;
 
     $this->importIndex += count($batch);
 
+    Log::info("{$requestId} INDEX UPDATED", [
+        'old_index' => $oldIndex,
+        'new_index' => $this->importIndex,
+        'total' => $this->importTotal,
+        'remaining' => max(
+            0,
+            $this->importTotal - $this->importIndex
+        ),
+
+        'importInserted' => $this->importInserted,
+        'importUpdated' => $this->importUpdated,
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | CEK SELESAI
+    |--------------------------------------------------------------------------
+    */
+
     if ($this->importIndex >= $this->importTotal) {
 
-        $this->finishImport();
+        Log::info("{$requestId} IMPORT COMPLETED", [
+            'total' => $this->importTotal,
+            'inserted' => $this->importInserted,
+            'updated' => $this->importUpdated,
+        ]);
 
-    } else {
+        $this->importing = false;
+        $this->importCompleted = true;
+        $this->importPreview = [];
+        $this->importFile = null;
 
-        $this->dispatch('import-batch-done');
+        session()->flash(
+            'success',
+            "Import selesai: {$this->importInserted} siswa baru ditambahkan, {$this->importUpdated} siswa diperbarui."
+        );
+
+        Log::info("{$requestId} PROCESS IMPORT BATCH END - COMPLETED");
+
+        return;
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | MASIH ADA DATA
+    |--------------------------------------------------------------------------
+    */
+
+    Log::info("{$requestId} DISPATCHING NEXT BATCH", [
+        'current_index' => $this->importIndex,
+        'total' => $this->importTotal,
+        'next_batch_start' => $this->importIndex,
+        'remaining' => $this->importTotal - $this->importIndex,
+    ]);
+
+    $this->dispatch('import-batch-done');
+
+    Log::info("{$requestId} PROCESS IMPORT BATCH END - NEXT BATCH DISPATCHED");
+
+    Log::info('====================================================');
 }
 
     private function finishImport()
