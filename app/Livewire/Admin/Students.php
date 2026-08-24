@@ -20,7 +20,7 @@ class Students extends Component
     public string $search        = '';
     public string $classFilter   = '';
     public string $sortField     = 'id';
-public string $sortDirection = 'asc';
+    public string $sortDirection = 'asc';
 
     // --- Form state ---
     public bool   $showForm      = false;
@@ -76,7 +76,7 @@ public string $sortDirection = 'asc';
             ->when($this->classFilter, fn($q) =>
                 $q->where('students.class_room_id', $this->classFilter)
             );
-    
+
         match ($this->sortField) {
             'name'  => $query->orderBy('users.name', $this->sortDirection),
             'email' => $query->orderBy('users.email', $this->sortDirection),
@@ -85,7 +85,7 @@ public string $sortDirection = 'asc';
             'kelas' => $query->orderBy('class_rooms.name', $this->sortDirection),
             default => $query->orderBy('students.id', $this->sortDirection),
         };
-    
+
         return $query->paginate(15);
     }
 
@@ -199,73 +199,166 @@ public string $sortDirection = 'asc';
         $path = $this->importFile->getRealPath();
         $ext  = strtolower($this->importFile->getClientOriginalExtension());
 
-        $rows = [];
+        $preview = [];
 
+        /*
+        |--------------------------------------------------------------------------
+        | XLSX
+        |--------------------------------------------------------------------------
+        */
         if ($ext === 'xlsx') {
-            // Read xlsx without PhpSpreadsheet using a simple ZIP extraction of the sheet XML
+
             $rows = $this->readXlsx($path);
+
+            foreach ($rows as $r) {
+
+                $name = trim(
+                    $r['nama']
+                    ?? $r['name']
+                    ?? ''
+                );
+
+                $email = strtolower(
+                    trim($r['email'] ?? '')
+                );
+
+                // Baris kosong / tidak lengkap langsung dilewati
+                if ($name === '' || $email === '') {
+                    continue;
+                }
+
+                $preview[] = [
+                    'name'     => $name,
+                    'email'    => $email,
+                    'password' => trim($r['password'] ?? 'password'),
+                    'nis'      => trim($r['nis'] ?? ''),
+                    'nisn'     => trim($r['nisn'] ?? ''),
+                    'kelas'    => trim(
+                        $r['kelas']
+                        ?? $r['class']
+                        ?? $r['classroom']
+                        ?? ''
+                    ),
+                ];
+            }
+
+        /*
+        |--------------------------------------------------------------------------
+        | CSV / TXT
+        |--------------------------------------------------------------------------
+        */
         } else {
-            // CSV / TXT
+
             if (($handle = fopen($path, 'r')) !== false) {
+
                 $header = null;
+
                 while (($line = fgetcsv($handle, 1000, ',')) !== false) {
-                    if (! $header) {
-                        $header = array_map('strtolower', array_map('trim', $line));
+
+                    // Skip baris kosong
+                    if (count(array_filter($line, fn ($v) => trim((string) $v) !== '')) === 0) {
                         continue;
                     }
-                    if (count($line) < 2) continue;
-                    $rows[] = array_combine($header, array_pad($line, count($header), ''));
+
+                    // Header
+                    if ($header === null) {
+                        $header = array_map(
+                            'strtolower',
+                            array_map('trim', $line)
+                        );
+
+                        continue;
+                    }
+
+                    if (count($line) < 2) {
+                        continue;
+                    }
+
+                    $line = array_pad(
+                        $line,
+                        count($header),
+                        ''
+                    );
+
+                    $row = array_combine($header, $line);
+
+                    if (!$row) {
+                        continue;
+                    }
+
+                    $name = trim(
+                        $row['nama']
+                        ?? $row['name']
+                        ?? ''
+                    );
+
+                    $email = strtolower(
+                        trim($row['email'] ?? '')
+                    );
+
+                    if ($name === '' || $email === '') {
+                        continue;
+                    }
+
+                    $preview[] = [
+                        'name'     => $name,
+                        'email'    => $email,
+                        'password' => trim($row['password'] ?? 'password'),
+                        'nis'      => trim($row['nis'] ?? ''),
+                        'nisn'     => trim($row['nisn'] ?? ''),
+                        'kelas'    => trim(
+                            $row['kelas']
+                            ?? $row['class']
+                            ?? $row['classroom']
+                            ?? ''
+                        ),
+                    ];
                 }
+
                 fclose($handle);
             }
         }
 
-        if (empty($rows)) {
-            $this->importError = true;
-            $this->importMsg   = 'File kosong atau format tidak dikenali. Pastikan header kolom benar.';
-            return;
-        }
-
-        // Normalize rows → pick known columns
-        $preview = [];
-        foreach ($rows as $r) {
-            $preview[] = [
-                'name'     => trim($r['nama']         ?? $r['name']         ?? ''),
-                'email'    => strtolower(trim($r['email'] ?? '')),
-                'password' => trim($r['password']     ?? 'password'),
-                'nis'      => trim($r['nis']           ?? ''),
-                'nisn'     => trim($r['nisn']          ?? ''),
-                'kelas'    => trim($r['kelas']         ?? $r['class']        ?? $r['classroom'] ?? ''),
-            ];
-        }
-
-        // Filter rows that have at least name + email
-        $preview = array_filter($preview, fn($r) => $r['name'] !== '' && $r['email'] !== '');
-        $preview = array_values($preview);
+        /*
+        |--------------------------------------------------------------------------
+        | Validasi hasil
+        |--------------------------------------------------------------------------
+        */
 
         if (empty($preview)) {
             $this->importError = true;
-            $this->importMsg   = 'Tidak ada baris valid ditemukan. Pastikan kolom: nama/name, email ada.';
+            $this->importMsg   =
+                'Tidak ada baris valid ditemukan. Pastikan kolom nama/name dan email tersedia.';
+
             return;
         }
 
-        $this->importPreview = $preview;
-        $this->importMsg     = count($preview) . ' baris siap diimpor. Cek data lalu klik Konfirmasi Import.';
+        /*
+        |--------------------------------------------------------------------------
+        | Simpan preview
+        |--------------------------------------------------------------------------
+        */
+
+        $this->importPreview = array_values($preview);
+
+        $count = count($this->importPreview);
+
+        $this->importMsg =
+            "{$count} baris siap diimpor. Cek data lalu klik Konfirmasi Import.";
     }
 
     /**
-     * Kick off the batch import. This method itself does not process any
-     * rows — it only resets the progress counters and asks the browser to
-     * fire the first batch. Each batch after that runs as its own separate
-     * Livewire request (see processImportBatch()), so a 168-row import
-     * never hashes more than $importBatchSize passwords in one HTTP
-     * request/response cycle.
+     * Kick off the batched import. Called once when the user clicks
+     * "Konfirmasi Import" in the modal. Sets up the counters, then runs
+     * the FIRST batch synchronously; every subsequent batch is triggered
+     * by the browser via the `import-batch-done` event (see the Alpine
+     * x-init listener in students.blade.php), so each batch runs as its
+     * own fresh HTTP request and bcrypt never has to hash more than
+     * $importBatchSize passwords per request.
      */
     public function confirmImport()
     {
         if (empty($this->importPreview)) {
-            $this->importError = true;
-            $this->importMsg   = 'Tidak ada data untuk diimpor.';
             return;
         }
 
@@ -275,11 +368,8 @@ public string $sortDirection = 'asc';
         $this->importUpdated   = 0;
         $this->importing       = true;
         $this->importCompleted = false;
-        $this->importError     = false;
-        $this->importMsg       = '';
 
-        // Tell the browser to trigger the first batch as a fresh request.
-        $this->dispatch('import-batch-done');
+        $this->processImportBatch();
     }
 
     /**
@@ -471,47 +561,92 @@ public string $sortDirection = 'asc';
      */
     private function parseSheetRows(string $sheetXml, array $strings): array
     {
-        $xml  = simplexml_load_string($sheetXml);
+        $xml = simplexml_load_string($sheetXml);
+
+        if ($xml === false || !isset($xml->sheetData->row)) {
+            return [];
+        }
+
         $data = [];
 
         foreach ($xml->sheetData->row as $row) {
+
             $rowData = [];
+            $hasValue = false;
+
             foreach ($row->c as $cell) {
-                $t   = (string) ($cell['t'] ?? '');
-                $val = (string) ($cell->v ?? '');
-                if ($t === 's') {
-                    $val = $strings[(int) $val] ?? '';
-                }
 
-                // Cells with no value (e.g. blank/optional columns) are omitted
-                // entirely from the XML by Excel — not written as empty cells.
-                // We must use the cell reference (e.g. "F2") to figure out its
-                // real column index, otherwise every column after a blank one
-                // shifts left and gets mismatched with the wrong header.
                 $ref = (string) ($cell['r'] ?? '');
-                preg_match('/^([A-Z]+)/', $ref, $m);
-                $colIndex = $m[1] ?? null;
 
-                if ($colIndex !== null) {
-                    $rowData[$this->columnLetterToIndex($colIndex)] = $val;
-                } else {
-                    // Fallback: no reference available, append sequentially.
-                    $rowData[] = $val;
+                if ($ref === '') {
+                    continue;
                 }
+
+                /*
+                 * Ambil index kolom.
+                 * Contoh:
+                 * A1 -> 0
+                 * B1 -> 1
+                 * G1 -> 6
+                 */
+                if (!preg_match('/^([A-Z]+)/', $ref, $matches)) {
+                    continue;
+                }
+
+                $colIndex = $this->columnLetterToIndex($matches[1]);
+
+                // Kita hanya membutuhkan 7 kolom:
+                // A = No
+                // B = Nama
+                // C = Email
+                // D = Password
+                // E = NIS
+                // F = NISN
+                // G = Kelas
+                if ($colIndex > 6) {
+                    continue;
+                }
+
+                $type  = (string) ($cell['t'] ?? '');
+                $value = (string) ($cell->v ?? '');
+
+                // Shared string
+                if ($type === 's') {
+                    $value = $strings[(int) $value] ?? '';
+                }
+
+                // Inline string
+                elseif ($type === 'inlineStr') {
+                    $value = (string) ($cell->is->t ?? '');
+                }
+
+                $value = trim($value);
+
+                if ($value !== '') {
+                    $hasValue = true;
+                }
+
+                $rowData[$colIndex] = $value;
             }
 
-            if (! empty($rowData)) {
-                // Fill any missing gaps (skipped blank cells) with empty strings.
-                ksort($rowData);
-                $maxIndex = max(array_keys($rowData));
-                $filled = [];
-                for ($i = 0; $i <= $maxIndex; $i++) {
-                    $filled[] = $rowData[$i] ?? '';
-                }
-                $rowData = $filled;
+            /*
+             * Row benar-benar kosong:
+             * jangan dimasukkan ke array.
+             */
+            if (!$hasValue) {
+                continue;
             }
 
-            $data[] = $rowData;
+            /*
+             * Pastikan selalu mempunyai 7 kolom.
+             */
+            $filled = [];
+
+            for ($i = 0; $i < 7; $i++) {
+                $filled[$i] = $rowData[$i] ?? '';
+            }
+
+            $data[] = $filled;
         }
 
         return $data;
