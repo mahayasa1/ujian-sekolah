@@ -149,20 +149,49 @@
 @if($showImport)
 <div
     x-init="
-        let processing = false;
-    
-        $wire.on('import-batch-done', async () => {
-            if (processing) return;
-        
-            processing = true;
-        
-            try {
-                await $wire.processImportBatch();
-            } finally {
-                processing = false;
-            }
-        });
-    "
+    console.log('[IMPORT] x-init aktif');
+
+    let processing = false;
+
+    $wire.on('import-batch-done', async () => {
+
+        console.log('[IMPORT] EVENT import-batch-done DITERIMA');
+
+        if (processing) {
+            console.log('[IMPORT] SKIP - masih processing');
+            return;
+        }
+
+        processing = true;
+
+        console.log('[IMPORT] Memulai batch berikutnya...');
+
+        try {
+
+            const result = await $wire.processImportBatch();
+
+            console.log(
+                '[IMPORT] Batch request selesai',
+                result
+            );
+
+        } catch (error) {
+
+            console.error(
+                '[IMPORT] Batch request ERROR:',
+                error
+            );
+
+        } finally {
+
+            processing = false;
+
+            console.log(
+                '[IMPORT] processing = false'
+            );
+        }
+    });
+"
     style="position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;">
     <div style="background:white;border-radius:14px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.25);">
 
