@@ -335,6 +335,32 @@ class Students extends Component
 
         /*
         |--------------------------------------------------------------------------
+        | Cek email yang sudah ada — 1 query untuk semua data
+        |--------------------------------------------------------------------------
+        */
+        
+        $emails = collect($preview)
+            ->pluck('email')
+            ->filter()
+            ->map(fn ($email) => strtolower(trim($email)))
+            ->unique()
+            ->values();
+        
+        $existingEmails = User::whereIn('email', $emails)
+            ->pluck('email')
+            ->map(fn ($email) => strtolower($email))
+            ->flip()
+            ->all();
+        
+        foreach ($preview as &$row) {
+            $row['existing'] = isset($existingEmails[$row['email']]);
+        }
+        
+        unset($row);
+        
+
+        /*
+        |--------------------------------------------------------------------------
         | Simpan preview
         |--------------------------------------------------------------------------
         */

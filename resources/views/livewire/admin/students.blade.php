@@ -283,7 +283,7 @@
                         <tbody>
                             @foreach($importPreview as $i => $row)
                             @php
-                                $existingUser = \App\Models\User::where('email', $row['email'])->exists();
+                                $existingUser = $row['existing'] ?? false;
                             @endphp
                             <tr style="border-bottom:0.5px solid #F3F4F6;{{ $existingUser ? 'background:#FFFBEB;' : '' }}">
                                 <td style="padding:7px 10px;color:#9CA3AF;">{{ $i + 1 }}</td>
