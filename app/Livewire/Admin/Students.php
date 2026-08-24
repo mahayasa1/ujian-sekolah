@@ -55,6 +55,7 @@ class Students extends Component
     public int    $importUpdated   = 0;
     public bool   $importing       = false;
     public bool   $importCompleted = false;
+    public string $importStatus  = '';
 
     // ----------------------------------------------------------------
     // Paginated student list
@@ -385,73 +386,33 @@ class Students extends Component
     public function confirmImport()
 {
     if (empty($this->importPreview)) {
-        $this->importError = true;
-        $this->importMsg = 'Tidak ada data import yang tersedia.';
         return;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Simpan seluruh data import ke SESSION
-    |--------------------------------------------------------------------------
-    |
-    | Data tidak lagi dibawa melalui state Livewire setiap request.
-    | processImportBatch() akan mengambil data dari session.
-    |
-    */
+    $this->importTotal = count($this->importPreview);
 
-    $importData = array_values($this->importPreview);
+    // Simpan seluruh data import di session.
+    session()->put('student_import_data', $this->importPreview);
 
-    session()->put('student_import_data', $importData);
-
-    /*
-    |--------------------------------------------------------------------------
-    | Reset progress
-    |--------------------------------------------------------------------------
-    */
-
+    // Reset progress.
     $this->importing       = true;
     $this->importCompleted = false;
-
     $this->importIndex     = 0;
-    $this->importTotal     = count($importData);
-
     $this->importInserted  = 0;
     $this->importUpdated   = 0;
+    $this->importStatus    = "Menyiapkan import {$this->importTotal} data...";
 
-    /*
-    |--------------------------------------------------------------------------
-    | Preview tidak perlu lagi disimpan di state Livewire
-    |--------------------------------------------------------------------------
-    */
-
+    // Jangan lagi membawa 168 row di Livewire state.
     $this->importPreview = [];
 
-    /*
-    |--------------------------------------------------------------------------
-    | Log testing
-    |--------------------------------------------------------------------------
-    */
-
     Log::info('IMPORT CONFIRM', [
-        'importTotal' => $this->importTotal,
-        'session_has_data' => session()->has('student_import_data'),
-        'session_rows' => count(
-            session()->get('student_import_data', [])
-        ),
-        'importIndex' => $this->importIndex,
-        'batchSize' => $this->importBatchSize,
-        'memory_mb' => round(memory_get_usage(true) / 1024 / 1024, 2),
-        'peak_memory_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
+        'total'      => $this->importTotal,
+        'batch_size' => $this->importBatchSize,
+        'memory_mb'  => round(memory_get_usage(true) / 1024 / 1024, 2),
     ]);
 
-    /*
-    |--------------------------------------------------------------------------
-    | Jalankan batch pertama
-    |--------------------------------------------------------------------------
-    */
-
-    $this->processImportBatch();
+    // Browser akan memulai processImportBatch()
+    $this->dispatch('import-start');
 }
 
     /**
@@ -462,102 +423,62 @@ class Students extends Component
      */
     public function processImportBatch()
 {
-    $logId = 'IMPORT-' . uniqid('', true);
+    $requestId = 'IMPORT-' . uniqid('', true);
 
-    Log::info('====================================================');
-    Log::info($logId . ' PROCESS IMPORT BATCH START');
+    Log::info("{$requestId} PROCESS IMPORT BATCH START");
 
     /*
     |--------------------------------------------------------------------------
-    | Ambil data import dari SESSION
+    | Ambil state dari session
     |--------------------------------------------------------------------------
     */
 
     $importData = session()->get('student_import_data', []);
 
-    Log::info($logId . ' INITIAL STATE', [
-        'importing' => $this->importing,
-        'importCompleted' => $this->importCompleted,
-        'importIndex' => $this->importIndex,
-        'importTotal' => $this->importTotal,
-        'importBatchSize' => $this->importBatchSize,
-
-        'session_exists' => session()->has('student_import_data'),
-        'session_rows' => count($importData),
-
-        'preview_count' => count($this->importPreview),
-
-        'memory_mb' => round(
-            memory_get_usage(true) / 1024 / 1024,
-            2
-        ),
-
-        'peak_memory_mb' => round(
-            memory_get_peak_usage(true) / 1024 / 1024,
-            2
-        ),
+    Log::info("{$requestId} INITIAL STATE", [
+        'importing'        => $this->importing,
+        'importCompleted'  => $this->importCompleted,
+        'importIndex'      => $this->importIndex,
+        'importTotal'      => $this->importTotal,
+        'importBatchSize'  => $this->importBatchSize,
+        'session_exists'   => session()->has('student_import_data'),
+        'session_rows'     => count($importData),
+        'preview_count'    => count($this->importPreview),
+        'memory_mb'        => round(memory_get_usage(true) / 1024 / 1024, 2),
+        'peak_memory_mb'   => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
     ]);
 
     /*
     |--------------------------------------------------------------------------
-    | Pastikan data session tersedia
+    | Validasi state
     |--------------------------------------------------------------------------
     */
 
-    if (empty($importData)) {
-
-        Log::error($logId . ' IMPORT DATA SESSION EMPTY', [
-            'importIndex' => $this->importIndex,
-            'importTotal' => $this->importTotal,
-            'session_exists' => session()->has('student_import_data'),
+    if (
+        !$this->importing ||
+        $this->importCompleted ||
+        empty($importData) ||
+        $this->importIndex >= $this->importTotal
+    ) {
+        Log::info("{$requestId} IMPORT ALREADY FINISHED / INVALID STATE", [
+            'importing'       => $this->importing,
+            'importCompleted' => $this->importCompleted,
+            'importIndex'     => $this->importIndex,
+            'importTotal'     => $this->importTotal,
+            'session_rows'    => count($importData),
         ]);
 
-        $this->importing = false;
-        $this->importCompleted = false;
-        $this->importError = true;
-
-        $this->importMsg =
-            'Data import hilang dari session. Silakan ulangi proses import.';
-
-        return;
+        return [
+            'success'   => true,
+            'completed' => true,
+            'index'     => $this->importIndex,
+            'total'     => $this->importTotal,
+        ];
     }
 
     /*
     |--------------------------------------------------------------------------
-    | Pastikan total sesuai data session
-    |--------------------------------------------------------------------------
-    */
-
-    if ($this->importTotal <= 0) {
-        $this->importTotal = count($importData);
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Cek apakah seluruh data sudah selesai
-    |--------------------------------------------------------------------------
-    */
-
-    if ($this->importIndex >= $this->importTotal) {
-
-        Log::info($logId . ' IMPORT ALREADY FINISHED', [
-            'importIndex' => $this->importIndex,
-            'importTotal' => $this->importTotal,
-        ]);
-
-        $this->importing = false;
-        $this->importCompleted = true;
-
-        session()->forget('student_import_data');
-
-        Log::info($logId . ' SESSION IMPORT DATA REMOVED');
-
-        return;
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Ambil batch dari SESSION
+    | Ambil batch
     |--------------------------------------------------------------------------
     */
 
@@ -567,22 +488,13 @@ class Students extends Component
         $this->importBatchSize
     );
 
-    Log::info($logId . ' BATCH PREPARED', [
+    Log::info("{$requestId} BATCH PREPARED", [
         'batch_start_index' => $this->importIndex,
-        'batch_count' => count($batch),
-        'batch_end_index' =>
-            $this->importIndex + count($batch) - 1,
-        'importTotal' => $this->importTotal,
-
-        'memory_mb' => round(
-            memory_get_usage(true) / 1024 / 1024,
-            2
-        ),
-
-        'peak_memory_mb' => round(
-            memory_get_peak_usage(true) / 1024 / 1024,
-            2
-        ),
+        'batch_count'       => count($batch),
+        'batch_end_index'   => $this->importIndex + count($batch) - 1,
+        'importTotal'       => $this->importTotal,
+        'memory_mb'         => round(memory_get_usage(true) / 1024 / 1024, 2),
+        'peak_memory_mb'    => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
     ]);
 
     /*
@@ -593,19 +505,25 @@ class Students extends Component
 
     try {
 
-        DB::transaction(function () use ($batch, $logId) {
+        DB::transaction(function () use ($batch, $requestId) {
 
             /*
             |--------------------------------------------------------------------------
-            | Ambil semua kelas sekali saja
+            | Load semua classroom sekali
             |--------------------------------------------------------------------------
             */
 
             $classRooms = ClassRoom::pluck('id', 'name');
 
-            Log::info($logId . ' CLASSROOM LOADED', [
+            Log::info("{$requestId} CLASSROOM LOADED", [
                 'class_count' => $classRooms->count(),
             ]);
+
+            /*
+            |--------------------------------------------------------------------------
+            | Loop batch
+            |--------------------------------------------------------------------------
+            */
 
             foreach ($batch as $batchIndex => $row) {
 
@@ -613,13 +531,10 @@ class Students extends Component
                     empty($row['name']) ||
                     empty($row['email'])
                 ) {
-                    Log::warning(
-                        $logId . ' INVALID ROW SKIPPED',
-                        [
-                            'batch_index' => $batchIndex,
-                            'row' => $row,
-                        ]
-                    );
+                    Log::warning("{$requestId} INVALID ROW", [
+                        'batch_index' => $batchIndex,
+                        'row'         => $row,
+                    ]);
 
                     continue;
                 }
@@ -630,79 +545,64 @@ class Students extends Component
                 |--------------------------------------------------------------------------
                 */
 
-                $email = strtolower(
-                    trim($row['email'])
-                );
+                $email = strtolower(trim($row['email']));
 
                 /*
                 |--------------------------------------------------------------------------
-                | Cari kelas
+                | Cari classroom
                 |--------------------------------------------------------------------------
                 */
 
                 $classRoomId = null;
 
-                if (
-                    isset($row['kelas']) &&
-                    trim($row['kelas']) !== ''
-                ) {
-                    $className = trim($row['kelas']);
-
-                    $classRoomId =
-                        $classRooms[$className] ?? null;
+                if (!empty($row['kelas'])) {
+                    $classRoomId = $classRooms[$row['kelas']] ?? null;
                 }
 
                 /*
                 |--------------------------------------------------------------------------
-                | Cari user berdasarkan email
+                | Cari user
                 |--------------------------------------------------------------------------
                 */
 
-                $user = User::where(
-                    'email',
-                    $email
-                )->first();
+                $user = User::where('email', $email)->first();
+
+                /*
+                |--------------------------------------------------------------------------
+                | Update existing user
+                |--------------------------------------------------------------------------
+                */
 
                 if ($user) {
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | USER SUDAH ADA
-                    |--------------------------------------------------------------------------
-                    */
-
                     $user->update([
-                        'name' => trim($row['name']),
+                        'name' => $row['name'],
                         'role' => 'siswa',
                     ]);
 
                     $this->importUpdated++;
 
-                    Log::info(
-                        $logId . ' USER UPDATED',
-                        [
-                            'batch_index' => $batchIndex,
-                            'name' => $row['name'],
-                            'email' => $email,
-                            'user_id' => $user->id,
-                        ]
-                    );
+                    Log::info("{$requestId} USER UPDATED", [
+                        'batch_index' => $batchIndex,
+                        'name'        => $row['name'],
+                        'email'       => $email,
+                        'user_id'     => $user->id,
+                    ]);
+
+                /*
+                |--------------------------------------------------------------------------
+                | Create new user
+                |--------------------------------------------------------------------------
+                */
 
                 } else {
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | USER BARU
-                    |--------------------------------------------------------------------------
-                    */
-
-                    $password =
-                        !empty($row['password'])
-                            ? trim($row['password'])
-                            : 'password';
+                    $password = !empty($row['password'])
+                        ? $row['password']
+                        : 'password';
 
                     $user = User::create([
-                        'name'     => trim($row['name']),
+                        'name'     => $row['name'],
                         'email'    => $email,
                         'password' => Hash::make($password),
                         'role'     => 'siswa',
@@ -710,15 +610,12 @@ class Students extends Component
 
                     $this->importInserted++;
 
-                    Log::info(
-                        $logId . ' USER CREATED',
-                        [
-                            'batch_index' => $batchIndex,
-                            'name' => $row['name'],
-                            'email' => $email,
-                            'user_id' => $user->id,
-                        ]
-                    );
+                    Log::info("{$requestId} USER CREATED", [
+                        'batch_index' => $batchIndex,
+                        'name'        => $row['name'],
+                        'email'       => $email,
+                        'user_id'     => $user->id,
+                    ]);
                 }
 
                 /*
@@ -732,80 +629,38 @@ class Students extends Component
                         'user_id' => $user->id,
                     ],
                     [
-                        'nis' =>
-                            !empty($row['nis'])
-                                ? trim($row['nis'])
-                                : null,
+                        'nis'           => !empty($row['nis'])
+                            ? $row['nis']
+                            : null,
 
-                        'nisn' =>
-                            !empty($row['nisn'])
-                                ? trim($row['nisn'])
-                                : null,
+                        'nisn'          => !empty($row['nisn'])
+                            ? $row['nisn']
+                            : null,
 
-                        'class_room_id' =>
-                            $classRoomId,
+                        'class_room_id' => $classRoomId,
                     ]
                 );
+
+                Log::info("{$requestId} STUDENT SAVED", [
+                    'batch_index'  => $batchIndex,
+                    'user_id'      => $user->id,
+                    'class_room_id' => $classRoomId,
+                ]);
             }
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | Batch berhasil
-        |--------------------------------------------------------------------------
-        */
-
-        $processedCount = count($batch);
-
-        $this->importIndex += $processedCount;
-
-        Log::info($logId . ' BATCH SUCCESS', [
-            'processed_count' => $processedCount,
-            'new_importIndex' => $this->importIndex,
-            'importTotal' => $this->importTotal,
-            'importInserted' => $this->importInserted,
-            'importUpdated' => $this->importUpdated,
-
-            'memory_mb' => round(
-                memory_get_usage(true) / 1024 / 1024,
-                2
-            ),
-
-            'peak_memory_mb' => round(
-                memory_get_peak_usage(true) / 1024 / 1024,
-                2
-            ),
-        ]);
-
     } catch (\Throwable $e) {
 
-        /*
-        |--------------------------------------------------------------------------
-        | ERROR
-        |--------------------------------------------------------------------------
-        */
-
-        Log::error($logId . ' BATCH FAILED', [
-            'message' => $e->getMessage(),
-            'file' => $e->getFile(),
-            'line' => $e->getLine(),
-
-            'importIndex' => $this->importIndex,
-            'importTotal' => $this->importTotal,
-
-            'memory_mb' => round(
-                memory_get_usage(true) / 1024 / 1024,
-                2
-            ),
-
-            'peak_memory_mb' => round(
-                memory_get_peak_usage(true) / 1024 / 1024,
-                2
-            ),
+        Log::error("{$requestId} BATCH FAILED", [
+            'message'   => $e->getMessage(),
+            'file'      => $e->getFile(),
+            'line'      => $e->getLine(),
+            'trace'     => $e->getTraceAsString(),
+            'index'     => $this->importIndex,
+            'total'     => $this->importTotal,
         ]);
 
         $this->importing = false;
-        $this->importCompleted = false;
         $this->importError = true;
 
         $this->importMsg =
@@ -814,77 +669,103 @@ class Students extends Component
             ': ' .
             $e->getMessage();
 
-        return;
+        return [
+            'success' => false,
+            'error'   => true,
+            'message' => $e->getMessage(),
+            'index'   => $this->importIndex,
+        ];
     }
 
     /*
     |--------------------------------------------------------------------------
-    | CEK SELESAI
+    | Update index
+    |--------------------------------------------------------------------------
+    */
+
+    $processedCount = count($batch);
+
+    $this->importIndex += $processedCount;
+
+    $remaining = max(
+        0,
+        $this->importTotal - $this->importIndex
+    );
+
+    Log::info("{$requestId} BATCH SUCCESS", [
+        'processed_count' => $processedCount,
+        'new_importIndex' => $this->importIndex,
+        'importTotal'     => $this->importTotal,
+        'importInserted'  => $this->importInserted,
+        'importUpdated'   => $this->importUpdated,
+        'remaining'       => $remaining,
+        'memory_mb'       => round(memory_get_usage(true) / 1024 / 1024, 2),
+        'peak_memory_mb'  => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Selesai
     |--------------------------------------------------------------------------
     */
 
     if ($this->importIndex >= $this->importTotal) {
 
-        Log::info($logId . ' IMPORT COMPLETED', [
-            'importIndex' => $this->importIndex,
-            'importTotal' => $this->importTotal,
-            'importInserted' => $this->importInserted,
-            'importUpdated' => $this->importUpdated,
-        ]);
-
-        $this->importing = false;
+        $this->importing       = false;
         $this->importCompleted = true;
 
-        /*
-        |--------------------------------------------------------------------------
-        | Hapus data import dari session
-        |--------------------------------------------------------------------------
-        */
+        $this->importStatus =
+            "Import selesai: {$this->importInserted} siswa baru, " .
+            "{$this->importUpdated} siswa diperbarui.";
+
+        $this->importMsg =
+            "Import selesai: {$this->importInserted} siswa baru ditambahkan, " .
+            "{$this->importUpdated} siswa diperbarui.";
 
         session()->forget('student_import_data');
 
-        Log::info(
-            $logId . ' SESSION IMPORT DATA REMOVED'
-        );
+        Log::info("{$requestId} IMPORT COMPLETED", [
+            'total'    => $this->importTotal,
+            'inserted' => $this->importInserted,
+            'updated'  => $this->importUpdated,
+        ]);
 
-        session()->flash(
-            'success',
-            "Import selesai: {$this->importInserted} siswa baru ditambahkan, {$this->importUpdated} siswa diperbarui."
-        );
-
-        Log::info($logId . ' PROCESS IMPORT BATCH END - COMPLETED');
-
-        return;
+        return [
+            'success'   => true,
+            'completed' => true,
+            'index'     => $this->importIndex,
+            'total'     => $this->importTotal,
+            'inserted'  => $this->importInserted,
+            'updated'   => $this->importUpdated,
+        ];
     }
 
     /*
     |--------------------------------------------------------------------------
-    | Masih ada data
+    | Masih ada batch
     |--------------------------------------------------------------------------
     */
 
-    Log::info($logId . ' MORE BATCHES REMAIN', [
+    $this->importStatus =
+        "Memproses {$this->importIndex} dari {$this->importTotal} data...";
+
+    Log::info("{$requestId} MORE BATCHES REMAIN", [
         'currentIndex' => $this->importIndex,
-        'total' => $this->importTotal,
-        'remaining' =>
-            $this->importTotal - $this->importIndex,
+        'total'        => $this->importTotal,
+        'remaining'    => $remaining,
     ]);
 
-    /*
-    |--------------------------------------------------------------------------
-    | Minta browser menjalankan request berikutnya
-    |--------------------------------------------------------------------------
-    */
+    Log::info("{$requestId} PROCESS IMPORT BATCH END");
 
-    $this->dispatch('import-batch-done');
-
-    Log::info(
-        $logId . ' EVENT import-batch-done DISPATCHED'
-    );
-
-    Log::info(
-        $logId . ' PROCESS IMPORT BATCH END'
-    );
+    return [
+        'success'   => true,
+        'completed' => false,
+        'index'     => $this->importIndex,
+        'total'     => $this->importTotal,
+        'remaining' => $remaining,
+        'inserted'  => $this->importInserted,
+        'updated'   => $this->importUpdated,
+    ];
 }
 
     private function finishImport()

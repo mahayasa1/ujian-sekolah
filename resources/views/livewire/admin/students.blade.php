@@ -147,52 +147,7 @@
      MODAL IMPORT EXCEL / CSV
      ============================================================ --}}
 @if($showImport)
-<div
-    x-init="
-    console.log('[IMPORT] x-init aktif');
-
-    let processing = false;
-
-    $wire.on('import-batch-done', async () => {
-
-        console.log('[IMPORT] EVENT import-batch-done DITERIMA');
-
-        if (processing) {
-            console.log('[IMPORT] SKIP - masih processing');
-            return;
-        }
-
-        processing = true;
-
-        console.log('[IMPORT] Memulai batch berikutnya...');
-
-        try {
-
-            const result = await $wire.processImportBatch();
-
-            console.log(
-                '[IMPORT] Batch request selesai',
-                result
-            );
-
-        } catch (error) {
-
-            console.error(
-                '[IMPORT] Batch request ERROR:',
-                error
-            );
-
-        } finally {
-
-            processing = false;
-
-            console.log(
-                '[IMPORT] processing = false'
-            );
-        }
-    });
-"
-    style="position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;">
+<div style="position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;">
     <div style="background:white;border-radius:14px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.25);">
 
         {{-- Header --}}
@@ -453,6 +408,120 @@
         {{ $this->students->links() }}
     </div>
     @endif
+
+    
 </div>
+
+@script
+<script>
+    let studentImportProcessing = false;
+
+    const runStudentImportBatch = async ($wire) => {
+
+        if (studentImportProcessing) {
+            console.log('[IMPORT] SKIP - masih processing');
+            return;
+        }
+
+        studentImportProcessing = true;
+
+        console.log('[IMPORT] Memulai batch berikutnya...');
+
+        try {
+
+            const result = await $wire.processImportBatch();
+
+            console.log('[IMPORT] Batch request selesai', result);
+
+            if (!result) {
+
+                console.error(
+                    '[IMPORT] ERROR: response batch kosong/null'
+                );
+
+                studentImportProcessing = false;
+
+                return;
+            }
+
+            console.log('[IMPORT] Progress:', {
+                index: result.index,
+                total: result.total,
+                remaining: result.remaining,
+                completed: result.completed,
+                inserted: result.inserted,
+                updated: result.updated,
+            });
+
+            if (
+                result.success &&
+                result.completed
+            ) {
+
+                console.log(
+                    '[IMPORT] ========================================'
+                );
+
+                console.log(
+                    '[IMPORT] SEMUA BATCH SELESAI'
+                );
+
+                console.log(
+                    '[IMPORT] ========================================'
+                );
+
+                studentImportProcessing = false;
+
+                return;
+            }
+
+            if (
+                result.success &&
+                !result.completed
+            ) {
+
+                console.log(
+                    '[IMPORT] Batch berikutnya akan dimulai...'
+                );
+
+                studentImportProcessing = false;
+
+                setTimeout(() => {
+
+                    runStudentImportBatch($wire);
+
+                }, 200);
+
+                return;
+            }
+
+            console.error(
+                '[IMPORT] Batch gagal',
+                result
+            );
+
+            studentImportProcessing = false;
+
+        } catch (error) {
+
+            console.error(
+                '[IMPORT] EXCEPTION',
+                error
+            );
+
+            studentImportProcessing = false;
+        }
+    };
+
+    $wire.on('import-start', () => {
+
+        console.log(
+            '[IMPORT] EVENT import-start DITERIMA'
+        );
+
+        runStudentImportBatch($wire);
+    });
+</script>
+@endscript
 
 </div>
